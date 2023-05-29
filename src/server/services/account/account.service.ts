@@ -608,7 +608,7 @@ export class AccountService {
 
   async addMoney(req: Request<UpdateBankBalanceInput>) {
     logger.silly(`Adding money to ${req.source} ..`);
-    const { amount, message } = req.data;
+    const { amount, message, fromIdentifier } = req.data;
 
     if (amount <= 0) {
       throw new ServerError(GenericErrors.BadInput);
@@ -618,17 +618,27 @@ export class AccountService {
     const t = await sequelize.transaction();
 
     try {
+      let fromAccount = undefined;
       const account = await this._accountDB.getDefaultAccountByIdentifier(user.getIdentifier());
 
       if (!account) {
         throw new ServerError(GenericErrors.NotFound);
       }
 
+      if (fromIdentifier) {
+        logger.silly(`Adding money from ${fromIdentifier} ..`);
+        fromAccount = await this._accountDB.getDefaultAccountByIdentifier(fromIdentifier);
+        if (!fromAccount) {
+          throw new ServerError(GenericErrors.NotFound);
+        }
+        await this._accountDB.decrement(fromAccount, amount, t);
+      }
       await this._accountDB.increment(account, amount, t);
       await this._transactionService.handleCreateTransaction(
         {
           amount,
           message,
+          fromAccount: fromAccount?.toJSON(),
           toAccount: account?.toJSON(),
           type: TransactionType.Incoming,
         },
@@ -642,17 +652,27 @@ export class AccountService {
 
   async addMoneyByIdentifier(req: Request<UpdateBankBalanceInput>) {
     logger.silly(`Adding money by identifier to ${req.data.identifier} ..`);
-    const { amount, message, identifier } = req.data;
+    const { amount, message, identifier, fromIdentifier } = req.data;
     if (amount <= 0) {
       throw new ServerError(GenericErrors.BadInput);
     }
 
     const t = await sequelize.transaction();
     try {
+      let fromAccount = undefined;
       const account = await this._accountDB.getDefaultAccountByIdentifier(identifier ?? '');
 
       if (!account) {
         throw new ServerError(GenericErrors.NotFound);
+      }
+
+      if (fromIdentifier) {
+        logger.silly(`Adding money from ${fromIdentifier} ..`);
+        fromAccount = await this._accountDB.getDefaultAccountByIdentifier(fromIdentifier);
+        if (!fromAccount) {
+          throw new ServerError(GenericErrors.NotFound);
+        }
+        await this._accountDB.decrement(fromAccount, amount, t);
       }
 
       await this._accountDB.increment(account, amount, t);
@@ -660,7 +680,8 @@ export class AccountService {
         {
           amount,
           message,
-          fromAccount: account?.toJSON(),
+          fromAccount: fromAccount?.toJSON(),
+          toAccount: account?.toJSON(),
           type: TransactionType.Incoming,
         },
         t,
@@ -691,7 +712,7 @@ export class AccountService {
         {
           amount,
           message,
-          fromAccount: account?.toJSON(),
+          toAccount: account?.toJSON(),
           type: TransactionType.Incoming,
         },
         t,
@@ -703,7 +724,7 @@ export class AccountService {
   }
 
   async removeMoney(req: Request<UpdateBankBalanceInput>) {
-    const { amount, message } = req.data;
+    const { amount, message, toIdentifier } = req.data;
     logger.silly(`Removing ${amount} money from ${req.source}...`);
 
     if (amount <= 0) {
@@ -714,9 +735,19 @@ export class AccountService {
 
     const t = await sequelize.transaction();
     try {
+      let toAccount = undefined;
       const account = await this._accountDB.getDefaultAccountByIdentifier(user.getIdentifier());
       if (!account) {
         throw new ServerError(GenericErrors.NotFound);
+      }
+
+      if (toIdentifier) {
+        logger.silly(`Adding money to ${toIdentifier} ..`);
+        toAccount = await this._accountDB.getDefaultAccountByIdentifier(toIdentifier);
+        if (!toAccount) {
+          throw new ServerError(GenericErrors.NotFound);
+        }
+        await this._accountDB.decrement(toAccount, amount, t);
       }
 
       await account.update(
@@ -731,6 +762,7 @@ export class AccountService {
           amount: amount,
           message: message,
           fromAccount: account?.toJSON(),
+          toAccount: toAccount?.toJSON(),
           type: TransactionType.Outgoing,
         },
         t,
@@ -742,7 +774,7 @@ export class AccountService {
   }
 
   async removeMoneyByIdentifier(req: Request<UpdateBankBalanceInput>) {
-    const { amount, identifier, message } = req.data;
+    const { amount, identifier, message, toIdentifier } = req.data;
     logger.silly(`Removing ${amount} money by identifier from ${identifier} ..`);
 
     if (amount <= 0) {
@@ -751,9 +783,19 @@ export class AccountService {
 
     const t = await sequelize.transaction();
     try {
+      let toAccount = undefined;
       const account = await this._accountDB.getDefaultAccountByIdentifier(identifier ?? '');
       if (!account) {
         throw new ServerError(GenericErrors.NotFound);
+      }
+
+      if (toIdentifier) {
+        logger.silly(`Adding money to ${toIdentifier} ..`);
+        toAccount = await this._accountDB.getDefaultAccountByIdentifier(toIdentifier);
+        if (!toAccount) {
+          throw new ServerError(GenericErrors.NotFound);
+        }
+        await this._accountDB.decrement(toAccount, amount, t);
       }
 
       await this._accountDB.decrement(account, amount, t);
@@ -762,6 +804,7 @@ export class AccountService {
           amount,
           message,
           fromAccount: account?.toJSON(),
+          toAccount: toAccount?.toJSON(),
           type: TransactionType.Outgoing,
         },
         t,
@@ -877,8 +920,8 @@ export class AccountService {
       );
 
       if (sharedAccount) {
-        logger.error('User already exists in shared account.');
-        throw new ServerError(AccountErrors.UserAlreadyExists);
+        logger.debug('User already exists in shared account. (You can safely ignore this)');
+        return;
       }
 
       const account = await this._sharedAccountDB.createSharedAccount(
@@ -957,7 +1000,7 @@ export class AccountService {
       return sharedAccount;
     } catch (err) {
       t.rollback();
-      logger.error('Failed to add user to unique account');
+      logger.error('Failed to remove user from unique account');
     }
   }
 

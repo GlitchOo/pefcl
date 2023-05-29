@@ -216,7 +216,10 @@ export class AccountController {
   }
 
   @Export(ServerExports.AddBankBalance)
-  async addBankBalance(req: Request<{ amount: number; message: string }>, res: Response<unknown>) {
+  async addBankBalance(
+    req: Request<{ amount: number; message: string; fromIdentifier?: string }>,
+    res: Response<unknown>,
+  ) {
     try {
       await this._accountService.addMoney(req);
       res({ status: 'ok', data: {} });
@@ -296,7 +299,7 @@ export class AccountController {
 
   @Export(ServerExports.RemoveBankBalance)
   async removeBankBalance(
-    req: Request<{ amount: number; message: string }>,
+    req: Request<{ amount: number; message: string; toIdentifier?: string }>,
     res: Response<unknown>,
   ) {
     try {
