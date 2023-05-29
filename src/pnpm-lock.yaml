@@ -7,7 +7,7 @@ dependencies:
   '@project-error/pe-utils':
     specifier: ^0.2.7
     version: 0.2.7
-  '@sequelize/core':
+  'sequelize':
     specifier: link:packages\@sequelize\core
     version: 7.0.0-alpha.23(mysql2@2.3.3)(pg-hstore@2.3.4)(pg@8.11.0)(tedious@14.7.0)
   body-parser:

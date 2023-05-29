@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { DataTypes } from '@sequelize/core';
+import { DataTypes } from 'sequelize';
 
 export const timestamps = {
   createdAt: {

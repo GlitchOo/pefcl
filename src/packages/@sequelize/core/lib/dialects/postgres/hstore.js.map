@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../src/dialects/postgres/hstore.ts"],
-  "sourcesContent": ["const hstore = require('pg-hstore')({ sanitize: true });\n\ntype HstoreValue = boolean | number | string;\n\nexport type HstoreRecord = Record<string, HstoreValue>;\n\nexport function stringify(data: Record<string, HstoreValue>): string {\n  return hstore.stringify(data);\n}\n\nexport function parse(value: string): Record<string, HstoreValue> {\n  return hstore.parse(value);\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,MAAM,SAAS,QAAQ,WAAW,EAAE,EAAE,UAAU,KAAK,CAAC;AAM/C,SAAS,UAAU,MAA2C;AACnE,SAAO,OAAO,UAAU,IAAI;AAC9B;AAEO,SAAS,MAAM,OAA4C;AAChE,SAAO,OAAO,MAAM,KAAK;AAC3B;",
-  "names": []
-}

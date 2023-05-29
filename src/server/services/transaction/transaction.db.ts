@@ -1,4 +1,4 @@
-import { Op } from '@sequelize/core';
+import { Op } from 'sequelize';
 import { singleton } from 'tsyringe';
 import { GetTransactionsInput, TransactionInput, TransactionType } from '@typings/Transaction';
 import { AccountModel } from '../account/account.model';

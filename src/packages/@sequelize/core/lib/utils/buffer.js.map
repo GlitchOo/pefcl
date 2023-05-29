@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../src/utils/buffer.ts"],
-  "sourcesContent": ["export function makeBufferFromTypedArray(arr: ArrayBufferView | ArrayBuffer): Buffer {\n  return ArrayBuffer.isView(arr)\n    // To avoid a copy, use the typed array's underlying ArrayBuffer to back\n    // new Buffer, respecting the \"view\", i.e. byteOffset and byteLength\n    ? Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength)\n    // Pass through all other types to `Buffer.from`\n    : Buffer.from(arr);\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAO,SAAS,yBAAyB,KAA4C;AACnF,SAAO,YAAY,OAAO,GAAG,IAGzB,OAAO,KAAK,IAAI,QAAQ,IAAI,YAAY,IAAI,UAAU,IAEtD,OAAO,KAAK,GAAG;AACrB;",
-  "names": []
-}

@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../src/utils/class-to-invokable.ts"],
-  "sourcesContent": ["type Callable<A extends abstract new () => any> =\n  A extends new (...args: infer Args) => infer Instance\n    ? A & ((...args: Args) => Instance)\n    : never;\n\n/**\n * Wraps a constructor to not need the `new` keyword using a proxy.\n * Only used for data types.\n *\n * @param constructor The class instance to wrap as invocable.\n * @returns Wrapped class instance.\n * @private\n */\nexport function classToInvokable<\n  Class extends new (...args: any[]) => any,\n>(constructor: Class): Callable<Class> {\n  return new Proxy<Callable<Class>>(constructor as any, {\n    apply(_target, _thisArg, args: ConstructorParameters<Class>) {\n      return new constructor(...args);\n    },\n  });\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAaO,SAAS,iBAEd,aAAqC;AACrC,SAAO,IAAI,MAAuB,aAAoB;AAAA,IACpD,MAAM,SAAS,UAAU,MAAoC;AAC3D,aAAO,IAAI,YAAY,GAAG,IAAI;AAAA,IAChC;AAAA,EACF,CAAC;AACH;",
-  "names": []
-}

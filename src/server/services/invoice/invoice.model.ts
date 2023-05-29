@@ -1,5 +1,5 @@
 import { DATABASE_PREFIX, MS_TWO_WEEKS } from '@utils/constants';
-import { DataTypes, Model, Optional } from '@sequelize/core';
+import { DataTypes, Model, Optional } from 'sequelize';
 import { singleton } from 'tsyringe';
 import { Invoice, InvoiceStatus } from '../../../../typings/Invoice';
 import { sequelize } from '../../utils/pool';

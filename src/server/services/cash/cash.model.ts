@@ -1,5 +1,5 @@
 import { DATABASE_PREFIX } from '@utils/constants';
-import { DataTypes, Model, Optional } from '@sequelize/core';
+import { DataTypes, Model, Optional } from 'sequelize';
 import { Cash } from '@typings/Cash';
 import { sequelize } from '../../utils/pool';
 import { config } from '@utils/server-config';

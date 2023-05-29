@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../src/table-hints.ts"],
-  "sourcesContent": ["/**\n * An enum of table hints to be used in mssql for querying with table hints\n *\n * @property NOLOCK\n * @property READUNCOMMITTED\n * @property UPDLOCK\n * @property REPEATABLEREAD\n * @property SERIALIZABLE\n * @property READCOMMITTED\n * @property TABLOCK\n * @property TABLOCKX\n * @property PAGLOCK\n * @property ROWLOCK\n * @property NOWAIT\n * @property READPAST\n * @property XLOCK\n * @property SNAPSHOT\n * @property NOEXPAND\n */\nexport enum TableHints {\n  NOLOCK = 'NOLOCK',\n  READUNCOMMITTED = 'READUNCOMMITTED',\n  UPDLOCK = 'UPDLOCK',\n  REPEATABLEREAD = 'REPEATABLEREAD',\n  SERIALIZABLE = 'SERIALIZABLE',\n  READCOMMITTED = 'READCOMMITTED',\n  TABLOCK = 'TABLOCK',\n  TABLOCKX = 'TABLOCKX',\n  PAGLOCK = 'PAGLOCK',\n  ROWLOCK = 'ROWLOCK',\n  NOWAIT = 'NOWAIT',\n  READPAST = 'READPAST',\n  XLOCK = 'XLOCK',\n  SNAPSHOT = 'SNAPSHOT',\n  NOEXPAND = 'NOEXPAND',\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAmBO,IAAK,aAAL,kBAAKA,gBAAL;AACL,EAAAA,YAAA,YAAS;AACT,EAAAA,YAAA,qBAAkB;AAClB,EAAAA,YAAA,aAAU;AACV,EAAAA,YAAA,oBAAiB;AACjB,EAAAA,YAAA,kBAAe;AACf,EAAAA,YAAA,mBAAgB;AAChB,EAAAA,YAAA,aAAU;AACV,EAAAA,YAAA,cAAW;AACX,EAAAA,YAAA,aAAU;AACV,EAAAA,YAAA,aAAU;AACV,EAAAA,YAAA,YAAS;AACT,EAAAA,YAAA,cAAW;AACX,EAAAA,YAAA,WAAQ;AACR,EAAAA,YAAA,cAAW;AACX,EAAAA,YAAA,cAAW;AAfD,SAAAA;AAAA,GAAA;",
-  "names": ["TableHints"]
-}

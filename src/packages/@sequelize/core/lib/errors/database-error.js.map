@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../src/errors/database-error.ts"],
-  "sourcesContent": ["import type { CommonErrorProperties } from './base-error';\nimport { BaseError } from './base-error';\n\nexport interface DatabaseErrorParent extends Error, Pick<CommonErrorProperties, 'sql'> {\n  /** The parameters for the sql that triggered the error */\n  readonly parameters?: object;\n}\n\nexport interface DatabaseErrorSubclassOptions {\n  cause?: DatabaseErrorParent;\n\n  /**\n   * @deprecated use {@link DatabaseErrorSubclassOptions.cause}\n   */\n  parent?: DatabaseErrorParent;\n  message?: string;\n}\n\n/**\n * A base class for all database related errors.\n */\nexport class DatabaseError\n  extends BaseError\n  implements DatabaseErrorParent, CommonErrorProperties {\n  sql: string;\n  parameters: object;\n\n  declare cause: DatabaseErrorParent;\n\n  /**\n   * @param parent The database specific error which triggered this one\n   */\n  constructor(parent: DatabaseErrorParent) {\n    super(parent.message, { cause: parent });\n    this.name = 'SequelizeDatabaseError';\n\n    this.sql = parent.sql;\n    this.parameters = parent.parameters ?? {};\n  }\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AACA,wBAA0B;AAoBnB,MAAM,sBACH,4BAC8C;AAAA,EACtD;AAAA,EACA;AAAA;AAAA;AAAA;AAAA,EAOA,YAAY,QAA6B;AACvC,UAAM,OAAO,SAAS,EAAE,OAAO,OAAO,CAAC;AACvC,SAAK,OAAO;AAEZ,SAAK,MAAM,OAAO;AAClB,SAAK,aAAa,OAAO,cAAc,CAAC;AAAA,EAC1C;AACF;",
-  "names": []
-}

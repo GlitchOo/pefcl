@@ -1,7 +1,7 @@
 import { Card } from '@server/../../typings/BankCard';
 import { generateCardNumber } from '@server/utils/misc';
 import { DATABASE_PREFIX } from '@utils/constants';
-import { DataTypes, Model, Optional } from '@sequelize/core';
+import { DataTypes, Model, Optional } from 'sequelize';
 import { singleton } from 'tsyringe';
 import { sequelize } from '../../utils/pool';
 import { timestamps } from '../timestamps.model';

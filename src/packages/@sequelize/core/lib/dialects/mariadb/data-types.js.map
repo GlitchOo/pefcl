@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../src/dialects/mariadb/data-types.ts"],
-  "sourcesContent": ["export * from '../mysql/data-types.js';\n"],
-  "mappings": ";;;;;;;;;;;;;;;AAAA;AAAA;AAAA,+BAAc,mCAAd;",
-  "names": []
-}

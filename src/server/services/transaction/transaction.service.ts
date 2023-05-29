@@ -22,8 +22,7 @@ import { AccountRole } from '@typings/Account';
 import { MS_ONE_WEEK } from '@utils/constants';
 import { TransactionEvents } from '@typings/Events';
 import { SharedAccountDB } from '../accountShared/sharedAccount.db';
-import { Transaction as SequelizeTransaction } from 'sequelize/types';
-
+import { Transaction as SequelizeTransaction } from 'sequelize/types'
 const logger = mainLogger.child({ module: 'transactionService' });
 
 @singleton()
