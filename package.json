@@ -24,19 +24,19 @@
     "release": "yarn build && sh ./scripts/release.sh"
   },
   "devDependencies": {
-    "@citizenfx/client": "^2.0.5754-1",
-    "@commitlint/cli": "^16.0.2",
-    "@commitlint/config-conventional": "^16.0.0",
-    "@localazy/cli": "^1.6.0",
-    "@types/node": "^18.6.1",
+    "@citizenfx/client": "2.0.5754-1",
+    "@commitlint/cli": "^16.3.0",
+    "@commitlint/config-conventional": "^16.2.4",
+    "@localazy/cli": "^1.7.2",
+    "@types/node": "^18.16.16",
     "axios": "^0.26.1",
     "husky": "^7.0.4",
-    "nodemon": "^2.0.15",
+    "nodemon": "^2.0.22",
     "nx": "14.4.3",
-    "prettier": "^2.5.1",
+    "prettier": "^2.8.8",
     "pretty-quick": "^3.1.3"
   },
   "dependencies": {
-    "i18next-parser": "^6.0.0"
+    "i18next-parser": "^6.6.0"
   }
 }
