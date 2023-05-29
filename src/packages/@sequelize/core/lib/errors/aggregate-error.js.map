@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/errors/aggregate-error.ts"],
+  "sourcesContent": ["import { BaseError } from './base-error';\n\n/**\n * A wrapper for multiple Errors\n *\n * @param errors The aggregated errors that occurred\n */\nexport class AggregateError extends BaseError {\n  /** the aggregated errors that occurred */\n  readonly errors: Array<AggregateError | Error>;\n\n  constructor(errors: Array<AggregateError | Error>) {\n    super();\n    this.errors = errors;\n    this.name = 'AggregateError';\n  }\n\n  toString(): string {\n    const message = `AggregateError of:\\n${this.errors\n      .map((error: Error | AggregateError) => (error === this\n          ? '[Circular AggregateError]'\n          : error instanceof AggregateError\n            ? String(error).replace(/\\n$/, '').replace(/^/gm, '  ')\n            : String(error).replace(/^/gm, '    ').slice(2)))\n      .join('\\n')}\\n`;\n\n    return message;\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,wBAA0B;AAOnB,MAAM,uBAAuB,4BAAU;AAAA;AAAA,EAEnC;AAAA,EAET,YAAY,QAAuC;AACjD,UAAM;AACN,SAAK,SAAS;AACd,SAAK,OAAO;AAAA,EACd;AAAA,EAEA,WAAmB;AACjB,UAAM,UAAU;AAAA,EAAuB,KAAK,OACzC,IAAI,CAAC,UAAmC,UAAU,OAC7C,8BACA,iBAAiB,iBACf,OAAO,KAAK,EAAE,QAAQ,OAAO,EAAE,EAAE,QAAQ,OAAO,IAAI,IACpD,OAAO,KAAK,EAAE,QAAQ,OAAO,MAAM,EAAE,MAAM,CAAC,CAAE,EACrD,KAAK,IAAI;AAAA;AAEZ,WAAO;AAAA,EACT;AACF;",
+  "names": []
+}

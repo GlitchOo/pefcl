@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/dialects/mysql/mysql-utils.ts"],
+  "sourcesContent": ["export function escapeMysqlString(value: string): string {\n  // eslint-disable-next-line no-control-regex -- \\u001A is intended to be in this regex\n  value = value.replace(/[\\b\\0\\t\\n\\r\\u001A\"'\\\\]/g, s => {\n    switch (s) {\n      case '\\0': return '\\\\0';\n      case '\\n': return '\\\\n';\n      case '\\r': return '\\\\r';\n      case '\\b': return '\\\\b';\n      case '\\t': return '\\\\t';\n      case '\\u001A': return '\\\\Z';\n      default: return `\\\\${s}`;\n    }\n  });\n\n  return `'${value}'`;\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAO,SAAS,kBAAkB,OAAuB;AAEvD,UAAQ,MAAM,QAAQ,2BAA2B,OAAK;AACpD,YAAQ,GAAG;AAAA,MACT,KAAK;AAAM,eAAO;AAAA,MAClB,KAAK;AAAM,eAAO;AAAA,MAClB,KAAK;AAAM,eAAO;AAAA,MAClB,KAAK;AAAM,eAAO;AAAA,MAClB,KAAK;AAAM,eAAO;AAAA,MAClB,KAAK;AAAU,eAAO;AAAA,MACtB;AAAS,eAAO,KAAK;AAAA,IACvB;AAAA,EACF,CAAC;AAED,SAAO,IAAI;AACb;",
+  "names": []
+}

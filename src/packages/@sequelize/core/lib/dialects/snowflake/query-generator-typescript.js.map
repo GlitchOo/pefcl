@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/dialects/snowflake/query-generator-typescript.ts"],
+  "sourcesContent": ["import { AbstractQueryGenerator } from '../abstract/query-generator';\nimport type { TableNameOrModel } from '../abstract/query-generator-typescript';\n\n/**\n * Temporary class to ease the TypeScript migration\n */\nexport class SnowflakeQueryGeneratorTypeScript extends AbstractQueryGenerator {\n  describeTableQuery(tableName: TableNameOrModel) {\n    return `SHOW FULL COLUMNS FROM ${this.quoteTable(tableName)};`;\n  }\n\n  showIndexesQuery() {\n    // TODO [+snowflake-sdk]: check if this is the correct implementation\n    return `SELECT '' FROM DUAL`;\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,6BAAuC;AAMhC,MAAM,0CAA0C,8CAAuB;AAAA,EAC5E,mBAAmB,WAA6B;AAC9C,WAAO,0BAA0B,KAAK,WAAW,SAAS;AAAA,EAC5D;AAAA,EAEA,mBAAmB;AAEjB,WAAO;AAAA,EACT;AACF;",
+  "names": []
+}

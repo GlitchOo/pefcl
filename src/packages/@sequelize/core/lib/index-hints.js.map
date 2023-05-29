@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/index-hints.ts"],
+  "sourcesContent": ["/**\n * An enum of index hints to be used in mysql for querying with index hints\n *\n * @property USE\n * @property FORCE\n * @property IGNORE\n */\nexport enum IndexHints {\n  USE = 'USE',\n  FORCE = 'FORCE',\n  IGNORE = 'IGNORE',\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAOO,IAAK,aAAL,kBAAKA,gBAAL;AACL,EAAAA,YAAA,SAAM;AACN,EAAAA,YAAA,WAAQ;AACR,EAAAA,YAAA,YAAS;AAHC,SAAAA;AAAA,GAAA;",
+  "names": ["IndexHints"]
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/utils/dayjs.ts"],
+  "sourcesContent": ["import dayjs from 'dayjs';\nimport timezone from 'dayjs/plugin/timezone';\nimport utc from 'dayjs/plugin/utc';\n\ndayjs.extend(utc);\ndayjs.extend(timezone);\n\nconst history = new Map<string, boolean>();\n\nexport function isValidTimeZone(tz: string) {\n  if (history.has(tz)) {\n    return history.get(tz);\n  }\n\n  let status: boolean;\n  try {\n    Intl.DateTimeFormat(undefined, { timeZone: tz });\n\n    status = true;\n  } catch {\n    status = false;\n  }\n\n  history.set(tz, status);\n\n  return status;\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,mBAAkB;AAClB,sBAAqB;AACrB,iBAAgB;AAEhB,aAAAA,QAAM,OAAO,WAAAC,OAAG;AAChB,aAAAD,QAAM,OAAO,gBAAAE,OAAQ;AAErB,MAAM,UAAU,oBAAI,IAAqB;AAElC,SAAS,gBAAgB,IAAY;AAC1C,MAAI,QAAQ,IAAI,EAAE,GAAG;AACnB,WAAO,QAAQ,IAAI,EAAE;AAAA,EACvB;AAEA,MAAI;AACJ,MAAI;AACF,SAAK,eAAe,QAAW,EAAE,UAAU,GAAG,CAAC;AAE/C,aAAS;AAAA,EACX,QAAE;AACA,aAAS;AAAA,EACX;AAEA,UAAQ,IAAI,IAAI,MAAM;AAEtB,SAAO;AACT;",
+  "names": ["dayjs", "utc", "timezone"]
+}

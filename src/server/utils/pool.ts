@@ -1,4 +1,4 @@
-import { Sequelize } from 'sequelize';
+import { Sequelize } from '@sequelize/core';
 import { CONNECTION_STRING, parseUri } from './dbUtils';
 
 const mysqlConnectionString = GetConvar(CONNECTION_STRING, 'none');

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/decorators/legacy/index.ts"],
+  "sourcesContent": ["/**\n * This package exports all decorators that are available in Sequelize, built using the legacy stage-3 decorators proposal.\n *\n * All available decorators can be imported as follows:\n *\n * ```js\n * import { HasOne, Attribute } from '@sequelize/core/decorators-legacy';\n * ```\n *\n * @module decorators-legacy\n */\n\nexport * from './model-hooks.js';\nexport * from './attribute.js';\nexport * from './table.js';\nexport * from './validation.js';\nexport { HasOne, HasMany, BelongsTo, BelongsToMany } from './associations.js';\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAYA,2BAAc,6BAZd;AAaA,2BAAc,2BAbd;AAcA,2BAAc,uBAdd;AAeA,2BAAc,4BAfd;AAgBA,0BAA0D;",
+  "names": []
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/utils/model-utils.ts"],
+  "sourcesContent": ["import type { ModelStatic, Model } from '../model';\n\n/**\n * Returns true if the value is a model subclass.\n *\n * @param val The value whose type will be checked\n */\nexport function isModelStatic<M extends Model>(val: any): val is ModelStatic<M> {\n  // TODO: temporary workaround due to cyclic import. Should not be necessary once Model is fully migrated to TypeScript.\n  const { Model: TmpModel } = require('../model');\n\n  return typeof val === 'function' && val.prototype instanceof TmpModel;\n}\n\n/**\n * Returns true if a & b are the same initial model, ignoring variants created by {@link Model.withSchema}, {@link Model.withScope}, and the like.\n *\n * The difference with doing `a === b` is that this method will also\n * return true if one of the models is scoped, or a variant with a different schema.\n *\n * @example\n * isSameInitialModel(a, a.withScope('myScope')) // true;\n *\n * @param a\n * @param b\n */\nexport function isSameInitialModel(a: ModelStatic<any>, b: ModelStatic<any>): boolean {\n  return isModelStatic(a) && isModelStatic(b)\n    && (a.getInitialModel() === b.getInitialModel());\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAOO,SAAS,cAA+B,KAAiC;AAE9E,QAAM,EAAE,OAAO,SAAS,IAAI,QAAQ,UAAU;AAE9C,SAAO,OAAO,QAAQ,cAAc,IAAI,qBAAqB;AAC/D;AAcO,SAAS,mBAAmB,GAAqB,GAA8B;AACpF,SAAO,cAAc,CAAC,KAAK,cAAc,CAAC,KACpC,EAAE,gBAAgB,MAAM,EAAE,gBAAgB;AAClD;",
+  "names": []
+}

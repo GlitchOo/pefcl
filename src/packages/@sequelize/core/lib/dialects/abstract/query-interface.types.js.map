@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/dialects/abstract/query-interface.types.ts"],
+  "sourcesContent": ["import type { QueryRawOptions, Sequelize } from '../../sequelize';\nimport type { AbstractQueryGenerator, CreateSchemaQueryOptions, ListSchemasQueryOptions } from './query-generator';\n\nexport interface QueryInterfaceOptions {\n  sequelize: Sequelize;\n  queryGenerator: AbstractQueryGenerator;\n}\n\n/** Options accepted by {@link AbstractQueryInterfaceTypeScript#createSchema} */\nexport interface CreateSchemaOptions extends CreateSchemaQueryOptions, QueryRawOptions { }\n\n/** Options accepted by {@link AbstractQueryInterfaceTypeScript#showAllSchemas} */\nexport interface ShowAllSchemasOptions extends ListSchemasQueryOptions, QueryRawOptions { }\n\n/** Options accepted by {@link AbstractQueryInterfaceTypeScript#dropAllSchemas} */\nexport interface DropAllSchemasOptions extends QueryRawOptions {\n  /**\n   * List of schemas to skip dropping (i.e., list of schemas to keep)\n   */\n  skip?: string[];\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;AAAA;AAAA;",
+  "names": []
+}

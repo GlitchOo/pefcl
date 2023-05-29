@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/errors/eager-loading-error.ts"],
+  "sourcesContent": ["import type { ErrorOptions } from './base-error';\nimport { BaseError } from './base-error';\n\n/**\n * Thrown when an include statement is improperly constructed (see message for details)\n */\nexport class EagerLoadingError extends BaseError {\n  constructor(message: string, options?: ErrorOptions) {\n    super(message, options);\n    this.name = 'SequelizeEagerLoadingError';\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AACA,wBAA0B;AAKnB,MAAM,0BAA0B,4BAAU;AAAA,EAC/C,YAAY,SAAiB,SAAwB;AACnD,UAAM,SAAS,OAAO;AACtB,SAAK,OAAO;AAAA,EACd;AACF;",
+  "names": []
+}

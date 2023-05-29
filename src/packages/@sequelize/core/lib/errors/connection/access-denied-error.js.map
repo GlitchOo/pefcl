@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/errors/connection/access-denied-error.ts"],
+  "sourcesContent": ["import { ConnectionError } from '../connection-error';\n\n/**\n * Thrown when a connection to a database is refused due to insufficient privileges\n */\nexport class AccessDeniedError extends ConnectionError {\n  constructor(cause: Error) {\n    super(cause);\n    this.name = 'SequelizeAccessDeniedError';\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,8BAAgC;AAKzB,MAAM,0BAA0B,wCAAgB;AAAA,EACrD,YAAY,OAAc;AACxB,UAAM,KAAK;AACX,SAAK,OAAO;AAAA,EACd;AACF;",
+  "names": []
+}

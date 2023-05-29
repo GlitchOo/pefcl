@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/index.js"],
+  "sourcesContent": ["'use strict';\n\n/**\n  * A Sequelize module that contains the sequelize entry point.\n  *\n  * @module sequelize\n  */\n\n/** Exports the Sequelize entry point. */\nconst { Sequelize } = require('./sequelize');\n\n// for backward compatibility, Sequelize is importable with both of these styles:\n//  const Sequelize = require('@sequelize/core')\n//  const { Sequelize } = require('@sequelize/core')\n// TODO [>7]: Make sequelize only importable using the second form, so we can remove properties from the constructor\nmodule.exports = Sequelize;\nmodule.exports.Sequelize = Sequelize;\nmodule.exports.default = Sequelize;\n"],
+  "mappings": ";AASA,MAAM,EAAE,UAAU,IAAI,QAAQ,aAAa;AAM3C,OAAO,UAAU;AACjB,OAAO,QAAQ,YAAY;AAC3B,OAAO,QAAQ,UAAU;",
+  "names": []
+}

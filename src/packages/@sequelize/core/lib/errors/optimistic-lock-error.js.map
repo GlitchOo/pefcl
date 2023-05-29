@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/errors/optimistic-lock-error.ts"],
+  "sourcesContent": ["import type { ErrorOptions } from './base-error';\nimport { BaseError } from './base-error';\n\ninterface OptimisticLockErrorOptions {\n  message?: string;\n\n  /** The name of the model on which the update was attempted */\n  modelName?: string;\n\n  /** The values of the attempted update */\n  values?: Record<string, unknown>;\n  where?: Record<string, unknown>;\n}\n\n/**\n * Thrown when attempting to update a stale model instance\n */\nexport class OptimisticLockError extends BaseError {\n  modelName: string | undefined;\n  values: Record<string, unknown> | undefined;\n  where: Record<string, unknown> | undefined;\n\n  constructor(options?: OptimisticLockErrorOptions, errorOptions?: ErrorOptions) {\n    const message = options?.message\n      || `Attempting to update a stale model instance: ${options?.modelName}`;\n\n    super(message, errorOptions);\n    this.name = 'SequelizeOptimisticLockError';\n    this.modelName = options?.modelName;\n    this.values = options?.values;\n    this.where = options?.where;\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AACA,wBAA0B;AAgBnB,MAAM,4BAA4B,4BAAU;AAAA,EACjD;AAAA,EACA;AAAA,EACA;AAAA,EAEA,YAAY,SAAsC,cAA6B;AAC7E,UAAM,WAAU,mCAAS,YACpB,gDAAgD,mCAAS;AAE9D,UAAM,SAAS,YAAY;AAC3B,SAAK,OAAO;AACZ,SAAK,YAAY,mCAAS;AAC1B,SAAK,SAAS,mCAAS;AACvB,SAAK,QAAQ,mCAAS;AAAA,EACxB;AACF;",
+  "names": []
+}

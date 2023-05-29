@@ -1,0 +1,37 @@
+export interface HookOptions {
+    name?: string;
+}
+export declare const BeforeBulkCreate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterBulkCreate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeBulkDestroy: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterBulkDestroy: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeBulkRestore: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterBulkRestore: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeBulkUpdate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterBulkUpdate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeAssociate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterAssociate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeCount: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeCreate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterCreate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeDestroy: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterDestroy: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeFind: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeFindAfterExpandIncludeAll: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeFindAfterOptions: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterFind: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeRestore: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterRestore: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeSave: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterSave: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeSync: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterSync: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeUpdate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterUpdate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeUpsert: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterUpsert: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeValidate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterValidate: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const ValidationFailed: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const BeforeDefinitionRefresh: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;
+export declare const AfterDefinitionRefresh: import("./decorator-utils.js").OptionalParameterizedPropertyDecorator<HookOptions | undefined>;

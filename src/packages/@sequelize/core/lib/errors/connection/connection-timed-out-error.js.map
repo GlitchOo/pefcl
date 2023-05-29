@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/errors/connection/connection-timed-out-error.ts"],
+  "sourcesContent": ["import { ConnectionError } from '../connection-error';\n\n/**\n * Thrown when a connection to a database times out\n */\nexport class ConnectionTimedOutError extends ConnectionError {\n  constructor(cause: Error) {\n    super(cause);\n    this.name = 'SequelizeConnectionTimedOutError';\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,8BAAgC;AAKzB,MAAM,gCAAgC,wCAAgB;AAAA,EAC3D,YAAY,OAAc;AACxB,UAAM,KAAK;AACX,SAAK,OAAO;AAAA,EACd;AACF;",
+  "names": []
+}

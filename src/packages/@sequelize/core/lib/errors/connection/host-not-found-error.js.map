@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/errors/connection/host-not-found-error.ts"],
+  "sourcesContent": ["import { ConnectionError } from '../connection-error';\n\n/**\n * Thrown when a connection to a database has a hostname that was not found\n */\nexport class HostNotFoundError extends ConnectionError {\n  constructor(cause: Error) {\n    super(cause);\n    this.name = 'SequelizeHostNotFoundError';\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,8BAAgC;AAKzB,MAAM,0BAA0B,wCAAgB;AAAA,EACrD,YAAY,OAAc;AACxB,UAAM,KAAK;AACX,SAAK,OAAO;AAAA,EACd;AACF;",
+  "names": []
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/decorators/legacy/table.ts"],
+  "sourcesContent": ["import type { ModelOptions, Model, ModelStatic } from '../../model.js';\nimport { registerModelOptions } from '../shared/model.js';\n\n/**\n * The `@Table` decorator is used to configure a model. It is used on a model class, and takes an object as parameter.<br />\n * Using this decorator is completely optional, you only need to use it if you want to configure one of the options of your model.\n *\n * @example\n * ```ts\n * @Table({\n *   tableName: 'users',\n *   timestamps: false,\n * })\n * class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {}\n * ```\n *\n * @param options\n */\nexport function Table<M extends Model = Model>(options: ModelOptions<M>): ClassDecorator;\nexport function Table(target: ModelStatic): void;\nexport function Table(arg: any): undefined | ClassDecorator {\n  if (typeof arg === 'function') {\n    annotate(arg);\n\n    return undefined;\n  }\n\n  const options: ModelOptions = { ...arg };\n\n  return (target: any) => annotate(target, options);\n}\n\nfunction annotate(target: ModelStatic, options: ModelOptions = {}): void {\n  registerModelOptions(target, options);\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AACA,mBAAqC;AAmB9B,SAAS,MAAM,KAAsC;AAC1D,MAAI,OAAO,QAAQ,YAAY;AAC7B,aAAS,GAAG;AAEZ,WAAO;AAAA,EACT;AAEA,QAAM,UAAwB,EAAE,GAAG,IAAI;AAEvC,SAAO,CAAC,WAAgB,SAAS,QAAQ,OAAO;AAClD;AAEA,SAAS,SAAS,QAAqB,UAAwB,CAAC,GAAS;AACvE,yCAAqB,QAAQ,OAAO;AACtC;",
+  "names": []
+}

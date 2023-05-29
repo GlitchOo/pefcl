@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/dialects/abstract/query-generator.types.ts"],
+  "sourcesContent": ["import type { BindOrReplacements } from '../../sequelize';\n\nexport interface QueryWithBindParams {\n  query: string;\n  bind: BindOrReplacements;\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;AAAA;AAAA;",
+  "names": []
+}

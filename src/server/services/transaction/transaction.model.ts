@@ -1,5 +1,5 @@
 import { DATABASE_PREFIX } from '@utils/constants';
-import { DataTypes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, Optional } from '@sequelize/core';
 import { singleton } from 'tsyringe';
 import { Transaction, TransactionType } from '../../../../typings/Transaction';
 import { sequelize } from '../../utils/pool';

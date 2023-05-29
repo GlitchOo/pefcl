@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/dialects/ibmi/data-types.ts"],
+  "sourcesContent": ["import type { Falsy } from '../../generic/falsy.js';\nimport * as BaseTypes from '../abstract/data-types.js';\n\nexport class UUID extends BaseTypes.UUID {\n  toSql() {\n    return 'CHAR(36)';\n  }\n}\n\nexport class BOOLEAN extends BaseTypes.BOOLEAN {\n  escape(value: boolean | Falsy): string {\n    return value ? '1' : '0';\n  }\n\n  toBindableValue(value: boolean | Falsy): unknown {\n    return value ? 1 : 0;\n  }\n\n  toSql() {\n    return 'SMALLINT';\n  }\n}\n\nexport { STRING, CHAR, TEXT, TINYINT, SMALLINT, MEDIUMINT, INTEGER, BIGINT, FLOAT, DOUBLE, BLOB, DECIMAL, DATE, ENUM } from '../db2/data-types.js';\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AACA,gBAA2B;AAsB3B,wBAA4H;AApBrH,MAAM,aAAa,UAAU,KAAK;AAAA,EACvC,QAAQ;AACN,WAAO;AAAA,EACT;AACF;AAEO,MAAM,gBAAgB,UAAU,QAAQ;AAAA,EAC7C,OAAO,OAAgC;AACrC,WAAO,QAAQ,MAAM;AAAA,EACvB;AAAA,EAEA,gBAAgB,OAAiC;AAC/C,WAAO,QAAQ,IAAI;AAAA,EACrB;AAAA,EAEA,QAAQ;AACN,WAAO;AAAA,EACT;AACF;",
+  "names": []
+}

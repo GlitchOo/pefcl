@@ -1,0 +1,300 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var connection_manager_exports = {};
+__export(connection_manager_exports, {
+  PostgresConnectionManager: () => PostgresConnectionManager
+});
+module.exports = __toCommonJS(connection_manager_exports);
+var import_pick = __toESM(require("lodash/pick"));
+var import_semver = __toESM(require("semver"));
+var import_errors = require("../../errors");
+var import_sequelize = require("../../sequelize.js");
+var import_dayjs = require("../../utils/dayjs");
+var import_logger = require("../../utils/logger");
+var import_connection_manager = require("../abstract/connection-manager");
+const debug = import_logger.logger.debugContext("connection:pg");
+class PostgresConnectionManager extends import_connection_manager.AbstractConnectionManager {
+  lib;
+  #arrayParserLib;
+  #oidMap = /* @__PURE__ */ new Map();
+  #oidParserCache = /* @__PURE__ */ new Map();
+  constructor(dialect, sequelize) {
+    super(dialect, sequelize);
+    const pgLib = this._loadDialectModule("pg");
+    this.lib = this.sequelize.config.native ? pgLib.native : pgLib;
+    this.#arrayParserLib = this._loadDialectModule("postgres-array");
+  }
+  async connect(config) {
+    const port = Number(config.port ?? this.dialect.getDefaultPort());
+    const connectionConfig = {
+      ...config.dialectOptions && (0, import_pick.default)(config.dialectOptions, [
+        // see [http://www.postgresql.org/docs/9.3/static/runtime-config-logging.html#GUC-APPLICATION-NAME]
+        "application_name",
+        // choose the SSL mode with the PGSSLMODE environment variable
+        // object format: [https://github.com/brianc/node-postgres/blob/ee19e74ffa6309c9c5e8e01746261a8f651661f8/lib/connection.js#L79]
+        // see also [http://www.postgresql.org/docs/9.3/static/libpq-ssl.html]
+        "ssl",
+        // In addition to the values accepted by the corresponding server,
+        // you can use "auto" to determine the right encoding from the
+        // current locale in the client (LC_CTYPE environment variable on Unix systems)
+        "client_encoding",
+        // !! DO NOT SET THIS TO TRUE !!
+        // (unless you know what you're doing)
+        // see [http://www.postgresql.org/message-id/flat/bc9549a50706040852u27633f41ib1e6b09f8339d845@mail.gmail.com#bc9549a50706040852u27633f41ib1e6b09f8339d845@mail.gmail.com]
+        "binary",
+        // This should help with backends incorrectly considering idle clients to be dead and prematurely disconnecting them.
+        // this feature has been added in pg module v6.0.0, check pg/CHANGELOG.md
+        "keepAlive",
+        // Times out queries after a set time in milliseconds in the database end. Added in pg v7.3
+        "statement_timeout",
+        // Times out queries after a set time in milliseconds in client end, query would be still running in database end.
+        "query_timeout",
+        // Terminate any session with an open transaction that has been idle for longer than the specified duration in milliseconds. Added in pg v7.17.0 only supported in postgres >= 10
+        "idle_in_transaction_session_timeout",
+        // Maximum wait time for lock requests in milliseconds. Added in pg v8.8.0.
+        "lock_timeout",
+        // Postgres allows additional session variables to be configured in the connection string in the `options` param.
+        // see [https://www.postgresql.org/docs/14/libpq-connect.html#LIBPQ-CONNECT-OPTIONS]
+        "options"
+      ]),
+      port,
+      ...(0, import_pick.default)(config, ["password", "host", "database"]),
+      user: config.username,
+      types: {
+        getTypeParser: (oid, format) => this.getTypeParser(oid, format)
+      }
+    };
+    const connection = new this.lib.Client(connectionConfig);
+    await new Promise((resolve, reject) => {
+      let responded = false;
+      const parameterHandler = (message) => {
+        var _a;
+        switch (message.parameterName) {
+          case "server_version": {
+            const version = (_a = import_semver.default.coerce(message.parameterValue)) == null ? void 0 : _a.version;
+            this.sequelize.options.databaseVersion = version && import_semver.default.valid(version) ? version : this.dialect.defaultVersion;
+            break;
+          }
+          case "standard_conforming_strings": {
+            connection.standard_conforming_strings = message.parameterValue === "on";
+            break;
+          }
+          default:
+        }
+      };
+      const endHandler = () => {
+        debug("connection timeout");
+        if (!responded) {
+          reject(new import_errors.ConnectionTimedOutError(new Error("Connection timed out")));
+        }
+      };
+      connection.once("end", endHandler);
+      if (!this.sequelize.config.native) {
+        connection.connection.on("parameterStatus", parameterHandler);
+      }
+      connection.connect((err) => {
+        responded = true;
+        if (!this.sequelize.config.native) {
+          connection.connection.removeListener("parameterStatus", parameterHandler);
+        }
+        if (err) {
+          if (err.code) {
+            switch (err.code) {
+              case "ECONNREFUSED":
+                reject(new import_errors.ConnectionRefusedError(err));
+                break;
+              case "ENOTFOUND":
+                reject(new import_errors.HostNotFoundError(err));
+                break;
+              case "EHOSTUNREACH":
+                reject(new import_errors.HostNotReachableError(err));
+                break;
+              case "EINVAL":
+                reject(new import_errors.InvalidConnectionError(err));
+                break;
+              default:
+                reject(new import_errors.ConnectionError(err));
+                break;
+            }
+          } else {
+            reject(new import_errors.ConnectionError(err));
+          }
+        } else {
+          debug("connection acquired");
+          connection.removeListener("end", endHandler);
+          resolve(connection);
+        }
+      });
+    });
+    connection.once("error", (error) => {
+      connection._invalid = true;
+      debug(`connection error ${error.code || error.message}`);
+      void this.pool.destroy(connection);
+    });
+    let query = "";
+    if (this.sequelize.options.standardConformingStrings !== false && connection.standard_conforming_strings) {
+      query += "SET standard_conforming_strings=on;";
+    }
+    if (this.sequelize.options.clientMinMessages !== void 0) {
+      console.warn('Usage of "options.clientMinMessages" is deprecated and will be removed in v7.');
+      console.warn('Please use the sequelize option "dialectOptions.clientMinMessages" instead.');
+    }
+    if (!(config.dialectOptions && config.dialectOptions.clientMinMessages && config.dialectOptions.clientMinMessages.toLowerCase() === "ignore" || this.sequelize.options.clientMinMessages === false)) {
+      const clientMinMessages = config.dialectOptions && config.dialectOptions.clientMinMessages || this.sequelize.options.clientMinMessages || "warning";
+      query += `SET client_min_messages TO ${clientMinMessages};`;
+    }
+    if (!this.sequelize.config.keepDefaultTimezone) {
+      if (this.sequelize.options.timezone && (0, import_dayjs.isValidTimeZone)(this.sequelize.options.timezone)) {
+        query += `SET TIME ZONE '${this.sequelize.options.timezone}';`;
+      } else {
+        query += `SET TIME ZONE INTERVAL '${this.sequelize.options.timezone}' HOUR TO MINUTE;`;
+      }
+    }
+    if (query) {
+      await connection.query(query);
+    }
+    await this.#refreshOidMap(connection);
+    return connection;
+  }
+  async disconnect(connection) {
+    if (connection._ending) {
+      debug("connection tried to disconnect but was already at ENDING state");
+      return;
+    }
+    await connection.end();
+  }
+  validate(connection) {
+    return !connection._invalid && !connection._ending;
+  }
+  async #refreshOidMap(connection) {
+    const sql = `
+      WITH ranges AS (SELECT pg_range.rngtypid,
+                             pg_type.typname  AS rngtypname,
+                             pg_type.typarray AS rngtyparray,
+                             pg_range.rngsubtype
+                      FROM pg_range
+                             LEFT OUTER JOIN pg_type
+                                             ON pg_type.oid = pg_range.rngtypid)
+      SELECT pg_type.typname,
+             pg_type.typtype,
+             pg_type.oid,
+             pg_type.typarray,
+             ranges.rngtypname,
+             ranges.rngtypid,
+             ranges.rngtyparray
+      FROM pg_type
+             LEFT OUTER JOIN ranges
+                             ON pg_type.oid = ranges.rngsubtype
+      WHERE (pg_type.typtype IN ('b', 'e'));
+    `;
+    let results;
+    if (connection instanceof import_sequelize.Sequelize) {
+      results = (await connection.query(sql)).pop();
+    } else {
+      results = await connection.query(sql);
+    }
+    if (Array.isArray(results) && results[0].command === "SET") {
+      results = results.pop();
+    }
+    const newNameOidMap = /* @__PURE__ */ new Map();
+    for (const row of results.rows) {
+      if (!newNameOidMap.has(row.oid)) {
+        newNameOidMap.set(row.oid, {
+          oid: row.oid,
+          typeName: row.typname,
+          type: "base"
+        });
+      }
+      if (row.typarray) {
+        newNameOidMap.set(row.typarray, {
+          oid: row.typarray,
+          typeName: row.typname,
+          type: "array",
+          baseOid: row.oid
+        });
+      }
+      if (row.rngtypid) {
+        newNameOidMap.set(row.rngtypid, {
+          oid: row.rngtypid,
+          typeName: row.rngtypname,
+          type: "range",
+          baseOid: row.oid
+        });
+      }
+      if (row.rngtyparray) {
+        newNameOidMap.set(row.rngtyparray, {
+          oid: row.rngtyparray,
+          typeName: row.rngtypname,
+          type: "range-array",
+          baseOid: row.oid,
+          rangeOid: row.rngtypid
+        });
+      }
+    }
+    this.#oidMap = newNameOidMap;
+  }
+  #buildArrayParser(subTypeParser) {
+    return (source) => {
+      return this.#arrayParserLib.parse(source, subTypeParser);
+    };
+  }
+  getTypeParser(oid, format) {
+    const cachedParser = this.#oidParserCache.get(oid);
+    if (cachedParser) {
+      return cachedParser;
+    }
+    const customParser = this.#getCustomTypeParser(oid, format);
+    if (customParser) {
+      this.#oidParserCache.set(oid, customParser);
+      return customParser;
+    }
+    return this.lib.types.getTypeParser(oid, format);
+  }
+  #getCustomTypeParser(oid, format) {
+    const typeData = this.#oidMap.get(oid);
+    if (!typeData) {
+      return null;
+    }
+    if (typeData.type === "range-array") {
+      return this.#buildArrayParser(this.getTypeParser(typeData.rangeOid, format));
+    }
+    if (typeData.type === "array") {
+      return this.#buildArrayParser(this.getTypeParser(typeData.baseOid, format));
+    }
+    const parser = this.dialect.getParserForDatabaseDataType(typeData.typeName);
+    return parser ?? null;
+  }
+  /**
+   * Refreshes the local registry of Custom Types (e.g. enum) OIDs
+   */
+  async refreshDynamicOids() {
+    await this.#refreshOidMap(this.sequelize);
+  }
+}
+//# sourceMappingURL=connection-manager.js.map
