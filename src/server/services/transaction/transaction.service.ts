@@ -9,6 +9,7 @@ import {
   TransactionType,
   TransferType,
 } from '@typings/Transaction';
+import { Account, AccountType } from '@typings/Account'
 import { sequelize } from '@server/utils/pool';
 import { mainLogger } from '@server/sv_logger';
 import { UserService } from '../user/user.service';
@@ -23,6 +24,7 @@ import { MS_ONE_WEEK } from '@utils/constants';
 import { TransactionEvents } from '@typings/Events';
 import { SharedAccountDB } from '../accountShared/sharedAccount.db';
 import { Transaction as SequelizeTransaction } from 'sequelize/types'
+import { AccountModel } from '../account/account.model';
 const logger = mainLogger.child({ module: 'transactionService' });
 
 @singleton()
@@ -47,24 +49,51 @@ export class TransactionService {
     this._externalAccountService = externalAccountService;
   }
 
+  private async getMyAccounts(source: number) {
+    const user = this._userService.getUser(source);
+    const accounts = await this._accountDB.getAccountsByIdentifier(user.getIdentifier());
+    return accounts;
+  }
+
+  private async getMySharedAccounts(source: number): Promise<Account[]> {
+    const user = this._userService.getUser(source);
+    const accounts = await this._sharedAccountDB.getSharedAccountsByIdentifier(
+      user.getIdentifier(),
+    );
+    const mappedAccounts = accounts.map((sharedAccount) => {
+      const acc = sharedAccount.getDataValue('account') as unknown as AccountModel;
+      const sharedAcc = sharedAccount.toJSON();
+
+      /* Override role by the shared one. */
+      return {
+        ...acc.toJSON(),
+        role: sharedAcc.role,
+      };
+    });
+
+    return mappedAccounts;
+  }
+
+  async handleGetMyAccountsIDs(source: number): Promise<any> {
+    logger.debug('Retrieving accounts mapped');
+    const accountModels = await this.getMyAccounts(source);
+    const accounts = accountModels.map((account) => account.toJSON());
+    const filteredAccounts = accounts.filter((account) => account.type !== AccountType.Shared);
+    const sharedAccounts = await this.getMySharedAccounts(source);
+
+    const accs = [...filteredAccounts, ...sharedAccounts];
+    return accs.map((account) => account.id);
+  }
+
   private async getMyTransactions(req: Request<GetTransactionsInput>) {
     logger.silly('Getting transactions');
     logger.silly(req);
 
-    const user = this._userService.getUser(req.source);
-    const accounts = await this._accountDB.getAccountsByIdentifier(user.getIdentifier());
-    const sharedAccounts = await this._sharedAccountDB.getSharedAccountsByIdentifier(
-      user.getIdentifier(),
-    );
-
-    const sharedAccountIds = sharedAccounts.map(
-      (account) => account.getDataValue('accountId') ?? 0,
-    );
-    const accountIds = accounts.map((account) => account.getDataValue('id') ?? 0);
+    const accountIds = await this.handleGetMyAccountsIDs(req.source);
 
     const transactions = await this._transactionDB.getTransactionFromAccounts({
       ...req.data,
-      accountIds: [...sharedAccountIds, ...accountIds],
+      accountIds: accountIds,
     });
 
     const total = await this._transactionDB.getTotalTransactionsFromAccounts(accountIds);
