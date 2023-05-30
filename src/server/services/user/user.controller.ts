@@ -21,9 +21,9 @@ export class UserController {
   }
 
   @Export(ServerExports.LoadPlayer)
-  async loadPlayer(req: Request<OnlineUser>, res: Response<void>) {
-    this._userService.loadPlayer(req.data);
-    res({ status: 'ok' });
+  async loadPlayer(req: Request<OnlineUser>, res: Response<any>) {
+    const user = await this._userService.loadPlayer(req.data);
+    res({ status: 'ok', data: user });
   }
 
   @Export(ServerExports.UnloadPlayer)

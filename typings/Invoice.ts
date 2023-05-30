@@ -12,6 +12,7 @@ export interface CreateInvoiceInput {
   fromIdentifier: string;
   receiverAccountIdentifier?: string;
   expiresAt?: string;
+  split?: number;
 }
 
 export interface InvoiceOnlineInput {
@@ -24,6 +25,7 @@ export interface Invoice {
   id: number;
   amount: number;
   message: string;
+  split?: number;
 
   /* Displayed information, on invoice pages and such. */
   to: string;

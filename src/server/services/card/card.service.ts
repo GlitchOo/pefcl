@@ -151,6 +151,37 @@ export class CardService {
     }
   }
 
+  async unblockCard(req: Request<BlockCardInput>) {
+    this.validateCardsConfig();
+    logger.silly('Unblocking card ..');
+    logger.silly(req.data);
+
+    const user = this.userService.getUser(req.source);
+    const { cardId } = req.data;
+
+    const t = await sequelize.transaction();
+    const card = await this.cardDB.getById(cardId, t);
+
+    if (card?.getDataValue('holderCitizenId') !== user.getIdentifier()) {
+      throw new Error(AuthorizationErrors.Forbidden);
+    }
+
+    if (!card) {
+      throw new Error(GenericErrors.NotFound);
+    }
+
+    try {
+      await card.update({ isBlocked: false });
+      t.commit();
+      logger.silly('Unblocked card.');
+      return true;
+    } catch (error: unknown) {
+      t.rollback();
+      logger.error(error);
+      return false;
+    }
+  }
+
   async deleteCard(req: Request<BlockCardInput>) {
     this.validateCardsConfig();
     logger.silly('Deleting card ..');

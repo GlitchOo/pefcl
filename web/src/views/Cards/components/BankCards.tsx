@@ -152,7 +152,7 @@ const BankCards = ({ onSelectCardId, selectedCardId, accountId }: BankCardsProps
             <div
               key={card.id}
               onClick={() => {
-                !card.isBlocked && onSelectCardId(card.id);
+                onSelectCardId(card.id);
               }}
             >
               <BankCard card={card} selected={selectedCardId === card.id} />

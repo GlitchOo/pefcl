@@ -22,14 +22,15 @@ interface CardActionsProps {
   cardId: number;
   isBlocked?: boolean;
   onBlock?(): void;
+  onUnBlock?(): void;
   onDelete?(): void;
 }
 
-const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps) => {
+const CardActions = ({ cardId, onBlock, onUnBlock, onDelete, isBlocked }: CardActionsProps) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [dialog, setDialog] = useState<'none' | 'block' | 'update' | 'delete'>('none');
+  const [dialog, setDialog] = useState<'none' | 'block' | 'unblock' | 'update' | 'delete'>('none');
   const [newPin, setNewPin] = useState('');
   const [confirmNewPin, setConfirmNewPin] = useState('');
   const { t } = useTranslation();
@@ -58,6 +59,27 @@ const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps)
       setSuccess(t('Successfully blocked the card.'));
       handleClose();
       onBlock?.();
+    } catch (err: unknown | Error) {
+      if (err instanceof Error) {
+        setError(err.message);
+      }
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleUnblockCard = async () => {
+    try {
+      setSuccess('');
+      setError('');
+      setIsLoading(true);
+
+      await fetchNui<unknown, BlockCardInput>(CardEvents.Unblock, {
+        cardId,
+      });
+      setSuccess(t('Successfully un Unblock the card.'));
+      handleClose();
+      onUnBlock?.();
     } catch (err: unknown | Error) {
       if (err instanceof Error) {
         setError(err.message);
@@ -123,16 +145,19 @@ const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps)
           </Stack>
 
           <Stack spacing={1} marginTop={2}>
-            <Button onClick={() => setDialog('update')}>{t('Update pin')}</Button>
-            <Button color="error" onClick={() => setDialog('block')}>
+            <Button onClick={() => !isBlocked && setDialog('update')}>
+              {t('Update pin')}
+            </Button>
+            
+            <Button color="error" onClick={() => setDialog('block')} disabled={isBlocked}>
               {t('Block the card')}
             </Button>
 
-            <Button
-              color="error"
-              onClick={() => !isBlocked && setDialog('delete')}
-              disabled={isLoading || !isBlocked}
-            >
+            <Button color="error" onClick={() => setDialog('unblock')} disabled={!isBlocked}>
+              {t('Unblock the card')}
+            </Button>
+
+            <Button color="error" onClick={() => !isBlocked && setDialog('delete')} disabled={isLoading || !isBlocked}>
               {t('Delete the card')}
             </Button>
           </Stack>
@@ -189,7 +214,7 @@ const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps)
           <Stack spacing={2}>
             <Stack spacing={1}>
               <DialogContentText>
-                {t('Are you sure you want to block this card? This action cannot be undone.')}
+                {t('Are you sure you want to block this card?')}
               </DialogContentText>
             </Stack>
 
@@ -210,6 +235,37 @@ const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps)
           </Button>
           <Button color="error" onClick={handleBlockCard} disabled={isLoading}>
             {t('Block the card')}
+          </Button>
+        </DialogActions>
+      </BaseDialog>
+
+      <BaseDialog open={dialog === 'unblock'} onClose={handleClose}>
+        <DialogTitle>{t('Unblock card')}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Stack spacing={1}>
+              <DialogContentText>
+                {t('Are you sure you want to unblock this card?')}
+              </DialogContentText>
+            </Stack>
+
+            {error && (
+              <Alert
+                icon={isLoading ? <InfoRounded /> : <ErrorRounded />}
+                color={isLoading ? 'info' : 'error'}
+              >
+                {error}
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+
+        <DialogActions>
+          <Button color="inherit" onClick={handleClose}>
+            {t('Cancel')}
+          </Button>
+          <Button color="error" onClick={handleUnblockCard} disabled={isLoading}>
+            {t('Unblock the card')}
           </Button>
         </DialogActions>
       </BaseDialog>
