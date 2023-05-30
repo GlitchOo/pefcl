@@ -61,6 +61,13 @@ InvoiceModel.init(
         min: 0,
       },
     },
+    split: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      validate: {
+        min: 0,
+      },
+    },
     status: {
       type: DataTypes.STRING,
       defaultValue: InvoiceStatus.PENDING,

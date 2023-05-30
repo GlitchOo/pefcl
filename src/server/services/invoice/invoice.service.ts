@@ -97,6 +97,7 @@ export class InvoiceService {
       /* Should we insert money to a specific account? */
       const receiverAccountIdentifier = invoice?.getDataValue('receiverAccountIdentifier');
       const toAccountIdentifier = invoice?.getDataValue('fromIdentifier');
+      const profitSplit = invoice?.getDataValue('split');
 
       const toAccount = receiverAccountIdentifier
         ? await this._accountDB.getUniqueAccountByIdentifier(receiverAccountIdentifier, t)
@@ -121,6 +122,7 @@ export class InvoiceService {
         throw new Error(BalanceErrors.InsufficentFunds);
       }
 
+      
       /* TODO: Implement transaction fee if wanted */
       await this._accountDB.transfer({
         amount,
@@ -155,6 +157,45 @@ export class InvoiceService {
         },
         t,
       );
+
+      if (profitSplit && profitSplit > 0) {
+        const originalSender = await this._accountDB.getDefaultAccountByIdentifier(toAccountIdentifier ?? '', t)
+
+        if (originalSender) {
+          const sendAmount = Math.round(amount/(profitSplit*0.01))
+
+          await this._accountDB.transfer({
+            amount: sendAmount,
+            fromAccount: toAccount,
+            toAccount: originalSender,
+            transaction: t,
+          });
+    
+          await this.transactionService.handleCreateTransaction(
+            {
+              amount: amount,
+              message: i18n.t('Paid commission to: {{to}}', {
+                to: invoice.getDataValue('from'),
+              }),
+              fromAccount: toAccount.toJSON(),
+              toAccount: originalSender.toJSON(),
+              type: TransactionType.Outgoing,
+            },
+            t,
+          );
+    
+          await this.transactionService.handleCreateTransaction(
+            {
+              amount: amount,
+              message: i18n.t('Received commission'),
+              fromAccount: toAccount.toJSON(),
+              toAccount: originalSender.toJSON(),
+              type: TransactionType.Incoming,
+            },
+            t,
+          );
+        }
+      }
 
       t.commit();
     } catch (err) {
