@@ -88,7 +88,7 @@ export enum CardEvents {
   OrderShared = 'pefcl:orderSharedCard',
   OrderPersonal = 'pefcl:orderPersonalCard',
   Block = 'pefcl:blockCard',
-  Unblock = 'pefcl:blockCard',
+  Unblock = 'pefcl:unblockCard',
   Delete = 'pefcl:deleteCard',
   UpdatePin = 'pefcl:updatePin',
   NewCard = 'pefcl:newCard',

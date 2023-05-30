@@ -149,15 +149,15 @@ const CardActions = ({ cardId, onBlock, onUnBlock, onDelete, isBlocked }: CardAc
               {t('Update pin')}
             </Button>
             
-            <Button color="error" onClick={() => setDialog('block')} disabled={isBlocked}>
+            <Button color="error" onClick={() => setDialog('block')} disabled={isLoading || isBlocked}>
               {t('Block the card')}
             </Button>
 
-            <Button color="error" onClick={() => setDialog('unblock')} disabled={!isBlocked}>
+            <Button color="error" onClick={() => setDialog('unblock')} disabled={isLoading || !isBlocked}>
               {t('Unblock the card')}
             </Button>
 
-            <Button color="error" onClick={() => !isBlocked && setDialog('delete')} disabled={isLoading || !isBlocked}>
+            <Button color="error" onClick={() => isBlocked && setDialog('delete')} disabled={isLoading || !isBlocked}>
               {t('Delete the card')}
             </Button>
           </Stack>
