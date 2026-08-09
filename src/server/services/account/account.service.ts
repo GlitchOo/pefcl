@@ -244,12 +244,12 @@ export class AccountService {
       return defaultAccount.toJSON();
     }
 
-    let balance = firstAccountStartBalance;
+    let balance = firstAccountStartBalance ?? 0;
     if (isFrameworkIntegrationEnabled && syncInitialBankBalance) {
       logger.info('Syncing initial bank balance from framework.');
 
       const exports = getFrameworkExports();
-      balance = exports.getBank(source);
+      balance = exports.getBank(source) ?? 0;
 
       logger.info('Moving bank balance from export to initial account.');
       logger.info({ identifier, balance });

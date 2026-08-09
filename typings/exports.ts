@@ -5,8 +5,8 @@ import { Card, InventoryCard } from './BankCard';
 export interface FrameworkIntegrationExports {
   /* Cash exports */
   getCash(source: number): number;
-  addCash: (source: number, amount: number) => void;
-  removeCash: (source: number, amount: number) => void;
+  addCash: (source: number, amount: number) => boolean | void;
+  removeCash: (source: number, amount: number) => boolean | void;
   /**
    *
    *  Move the bank balance from existing bank upon initial account creation.

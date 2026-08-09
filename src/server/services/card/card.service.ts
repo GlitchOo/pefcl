@@ -36,7 +36,8 @@ const logger = mainLogger.child({ module: 'card' });
 const isFrameworkIntegrationEnabled = isFrameworkIntegrationActive();
 
 const stripPin = <T extends { pin?: unknown }>(card: T): Omit<T, 'pin'> => {
-  const { pin: _pin, ...safe } = card;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { pin, ...safe } = card;
   return safe;
 };
 

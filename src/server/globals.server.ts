@@ -64,7 +64,7 @@ if (isMocking) {
     return convars[convar] ?? fallback;
   };
 
-  global.exports = () => ({
+  global.exports = {
     'your-resource': {
       addCash: () => {
         console.log('global.server.ts: Adding cash ..');
@@ -87,7 +87,7 @@ if (isMocking) {
         return [];
       },
     },
-  });
+  } as unknown as CitizenExports;
 
   global.on = (event: string, listeners: (...args: any[]) => void) => {
     ServerEmitter.on(event, listeners);

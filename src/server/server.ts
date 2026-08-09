@@ -26,7 +26,6 @@ import './utils/pool';
 import './utils/server-config';
 import { mainLogger } from './sv_logger';
 import { mockedResourceName } from './globals.server';
-import { config } from './utils/server-config';
 import { isFrameworkIntegrationActive } from './utils/frameworkIntegration';
 import { UserService } from './services/user/user.service';
 import { container } from 'tsyringe';

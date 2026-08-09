@@ -1,14 +1,8 @@
 import { DEFAULT_CLEARING_NUMBER } from './constants';
 import { config } from './server-config';
 
-const isMocking = process.env.NODE_ENV === 'mocking';
-
-export const getExports = () => {
-  if (!isMocking) {
-    return global.exports;
-  }
-
-  return typeof global.exports === 'function' ? global.exports() : global.exports;
+export const getExports = (): CitizenExports => {
+  return global.exports;
 };
 
 export const getSource = (): number => global.source;

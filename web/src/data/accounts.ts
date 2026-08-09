@@ -19,12 +19,12 @@ const getAccounts = async (): Promise<Account[]> => {
 };
 
 export const rawAccountAtom = atom<Account[]>([]);
-export const accountsAtom = atom<Promise<Account[]>, Account[] | undefined, Promise<void>>(
+export const accountsAtom = atom(
   async (get) => {
     const accounts = get(rawAccountAtom).length === 0 ? await getAccounts() : get(rawAccountAtom);
     return accounts;
   },
-  async (_get, set, by) => {
+  async (_get, set, by?: Account[]) => {
     return set(rawAccountAtom, by ?? (await getAccounts()));
   },
 );
@@ -59,7 +59,7 @@ export const defaultAccountBalance = atom(async (get) => {
 type OrderedAccounts = Record<number, number>;
 const accountOrderAtom = atom<string>(localStorage.getItem('order') ?? '');
 
-export const orderedAccountsAtom = atom<Promise<Account[]>, OrderedAccounts, Promise<void>>(
+export const orderedAccountsAtom = atom(
   async (get) => {
     const accounts = await get(accountsAtom);
     if (!Array.isArray(accounts)) return [];

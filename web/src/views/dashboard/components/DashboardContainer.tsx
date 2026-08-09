@@ -64,7 +64,7 @@ const Footer = styled.div`
 interface DashboardContainerProps {
   title: string;
   children?: React.ReactNode;
-  totalAtom: Atom<number>;
+  totalAtom: Atom<number | Promise<number>>;
   viewAllRoute: string;
 }
 

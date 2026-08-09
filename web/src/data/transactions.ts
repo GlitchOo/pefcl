@@ -27,17 +27,14 @@ const getTransactions = async (input: GetTransactionsInput): Promise<GetTransact
 
 export const rawTransactionsAtom = atom<GetTransactionsResponse>(transactionInitialState);
 
-export const transactionBaseAtom = atom<
-  Promise<GetTransactionsResponse>,
-  GetTransactionsResponse | undefined
->(
+export const transactionBaseAtom = atom(
   async (get) => {
     const hasTransactions = get(rawTransactionsAtom).transactions.length > 0;
     return hasTransactions
       ? get(rawTransactionsAtom)
       : await getTransactions({ ...transactionInitialState });
   },
-  async (get, set, by?) => {
+  async (get, set, by?: GetTransactionsResponse) => {
     const currentSettings = get(rawTransactionsAtom);
     return set(rawTransactionsAtom, by ?? (await getTransactions({ ...currentSettings })));
   },

@@ -125,7 +125,7 @@ interface ListItemProps {
   label: string;
   icon: ReactNode;
   amount?: number;
-  countAtom?: Atom<number>;
+  countAtom?: Atom<number | Promise<number>>;
 }
 const ListItem = ({ to, icon, label, amount, countAtom }: ListItemProps) => {
   const match = useMatch(to);

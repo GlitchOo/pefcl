@@ -1,7 +1,6 @@
 import { Export, ExportListener } from '@decorators/Export';
 import { NetPromise, PromiseEventListener } from '@decorators/NetPromise';
 import { OnlineUser } from '@server/../../typings/user';
-import { config } from '@server/utils/server-config';
 import { isFrameworkIntegrationActive } from '@server/utils/frameworkIntegration';
 import { ChangeCashInput } from '@typings/Cash';
 import { CashEvents, UserEvents } from '@typings/Events';

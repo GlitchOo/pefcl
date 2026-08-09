@@ -17,10 +17,10 @@ const useFrameworkIntegration = isFrameworkIntegrationActive();
 const maxPlayerDistance = config?.frameworkIntegration?.maxPlayerDistance ?? 5.0;
 
 const getDistanceBetweenSources = (a: number, b: number): number => {
-  const pedA = GetPlayerPed(a as unknown as string);
-  const pedB = GetPlayerPed(b as unknown as string);
-  const [x1, y1, z1] = GetEntityCoords(pedA, false);
-  const [x2, y2, z2] = GetEntityCoords(pedB, false);
+  const pedA = GetPlayerPed(String(a));
+  const pedB = GetPlayerPed(String(b));
+  const [x1, y1, z1] = GetEntityCoords(pedA);
+  const [x2, y2, z2] = GetEntityCoords(pedB);
   const dx = x1 - x2;
   const dy = y1 - y2;
   const dz = z1 - z2;

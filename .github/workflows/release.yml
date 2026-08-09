@@ -39,7 +39,13 @@ jobs:
       - name: Translations
         env:
           LOCALAZY_READ_KEY: ${{ secrets.LOCALAZY_READ_KEY }}
-        run: npm run translations:pull
+        run: |
+          if [ -z "$LOCALAZY_READ_KEY" ]; then
+            echo "LOCALAZY_READ_KEY not set; using committed locales"
+            npm run translations:generate-index
+          else
+            npm run translations:pull
+          fi
 
       - name: Install src deps
         working-directory: src

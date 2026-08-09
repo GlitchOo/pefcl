@@ -4,7 +4,7 @@ import React, { ReactNode } from 'react';
 
 interface BadgeAtomProps extends BadgeProps {
   children: ReactNode;
-  countAtom: Atom<number>;
+  countAtom: Atom<number | Promise<number>>;
 }
 
 const BadgeAtomContent = ({ countAtom, children, ...props }: BadgeAtomProps) => {
@@ -18,7 +18,8 @@ const BadgeAtomContent = ({ countAtom, children, ...props }: BadgeAtomProps) => 
 };
 
 const BadgeAtom = (props: BadgeAtomProps) => {
-  const { countAtom: _countAtom, children, ...badgeProps } = props;
+  const { children, countAtom, ...badgeProps } = props;
+  void countAtom;
   return (
     <React.Suspense fallback={<Badge badgeContent={'..'} {...badgeProps}>{children}</Badge>}>
       <BadgeAtomContent {...props} />

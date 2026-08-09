@@ -1,6 +1,8 @@
 import { ClientUtils } from '@project-error/pe-utils';
 
-export const ClUtils = new ClientUtils({ promiseTimeout: 30000 });
+// pe-utils typings misspell the constructor key as `promiseTimout`, but runtime reads `promiseTimeout`.
+export const ClUtils = new ClientUtils({ promiseTimout: 30000 });
+ClUtils.setSettings({ promiseTimeout: 30000 } as never);
 
 /**
  *  Will Register an NUI event listener that will immediately

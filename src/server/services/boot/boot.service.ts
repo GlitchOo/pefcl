@@ -51,7 +51,7 @@ export class BootService {
         logger.error(error);
 
         if (error instanceof Error && error.message.includes('No such export')) {
-          if (config.frameworkIntegration.isCardsEnabled && error.message.includes('Card')) {
+          if (config.frameworkIntegration?.isCardsEnabled && error.message.includes('Card')) {
             logger.error(' ');
             logger.error(
               'This framework does not seem to support cards. Make sure your resource is exporting the required exports!',

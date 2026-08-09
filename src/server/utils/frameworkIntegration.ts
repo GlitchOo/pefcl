@@ -146,5 +146,5 @@ export const getFrameworkExports = (): FrameworkIntegrationExports => {
     };
   }
 
-  return resourceExports as FrameworkIntegrationExports;
+  return resourceExports as unknown as FrameworkIntegrationExports;
 };

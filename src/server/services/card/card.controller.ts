@@ -75,7 +75,7 @@ export class CardController {
   }
 
   @NetPromise(CardEvents.Get)
-  async getCards(req: Request<GetCardInput>, res: Response<Card[]>) {
+  async getCards(req: Request<GetCardInput>, res: Response<Omit<Card, 'pin'>[]>) {
     try {
       const result = await this.cardService.getCards(req);
       res({ status: 'ok', data: result });

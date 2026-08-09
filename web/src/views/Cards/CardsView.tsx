@@ -1,7 +1,7 @@
 import { AccountCard } from '@components/AccountCard';
 import Layout from '@components/Layout';
 import { accountsAtom } from '@data/accounts';
-import { Backdrop, Stack } from '@mui/material';
+import { Backdrop } from '@mui/material';
 import { useAtom } from 'jotai';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
