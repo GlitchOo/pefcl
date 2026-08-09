@@ -2,7 +2,10 @@
 node_modules
 dist
 sv_pefcl.log
-locales
 temp
 npm-debug.log*
 .npm.installed
+localazy.keys.json
+crowdin.yml.bak
+# Optional local Crowdin credentials file (prefer env vars / GitHub secrets)
+.crowdin.yml

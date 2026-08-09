@@ -87,7 +87,7 @@ npm run build
 | `npm run dev` | Watch server/client + Vite UI |
 | `npm run dev:ingame` | In-game NUI / client watch mode |
 | `npm run lint` / `npm run tsc` | Lint and typecheck src + web |
-| `npm run setup` | `install:all` plus Localazy translation pull (needs API keys) |
+| `npm run setup` | `install:all` plus Crowdin translation pull (needs `CROWDIN_*` env) |
 
 ## License
 

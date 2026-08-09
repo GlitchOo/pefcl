@@ -38,17 +38,22 @@ jobs:
       - name: Install main deps
         run: npm ci --ignore-scripts
 
-      - name: Translations
+      - name: Pull Crowdin translations
+        continue-on-error: true
+        uses: crowdin/github-action@v2
+        with:
+          upload_sources: false
+          upload_translations: false
+          download_translations: true
+          create_pull_request: false
+          push_translations: false
         env:
-          LOCALAZY_READ_KEY: ${{ secrets.LOCALAZY_READ_KEY }}
-          LOCALAZY_WRITE_KEY: ${{ secrets.LOCALAZY_WRITE_KEY }}
-        run: |
-          if [ -z "$LOCALAZY_READ_KEY" ]; then
-            echo "LOCALAZY_READ_KEY not set; using committed locales"
-            npm run translations:generate-index
-          else
-            npm run translations:pull
-          fi
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate locale index
+        run: npm run translations:generate-index
 
       - name: Install src deps
         working-directory: src

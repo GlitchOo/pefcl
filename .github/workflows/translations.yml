@@ -1,24 +1,45 @@
 name: Translations
-on: [pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'locales/en/default.json'
+      - 'crowdin.yml'
+      - '.github/workflows/translations.yml'
 
 jobs:
-  test:
-    name: Pushing translations
+  sync:
+    name: Upload English sources to Crowdin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup node environment
+
+      - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: package-lock.json
-      - name: Install deps (Translations)
+
+      - name: Install deps
         run: npm ci --ignore-scripts
-      - name: Generate translations
-        working-directory: .
+
+      - name: Extract English source strings
+        run: |
+          npm run translations:generate
+          npm run translations:generate-index
+
+      - name: Upload sources to Crowdin
+        continue-on-error: true
+        uses: crowdin/github-action@v2
+        with:
+          upload_sources: true
+          upload_translations: false
+          download_translations: false
+          create_pull_request: false
         env:
-          LOCALAZY_WRITE_KEY: ${{ secrets.LOCALAZY_WRITE_KEY }}
-          LOCALAZY_READ_KEY: ${{ secrets.LOCALAZY_READ_KEY }}
-        run: npm run translations:generate && npm run translations:push
+          CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

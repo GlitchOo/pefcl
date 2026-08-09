@@ -1,0 +1,26 @@
+#
+# Crowdin configuration for PEFCL
+# Docs: https://crowdin.github.io/crowdin-cli/configuration
+#
+# Secrets (GitHub Actions / local env):
+#   CROWDIN_PROJECT_ID      - numeric project ID (Crowdin → Project Settings → API)
+#   CROWDIN_PERSONAL_TOKEN  - Account Settings → API → New Token (scope: projects)
+#
+"project_id_env": "CROWDIN_PROJECT_ID"
+"api_token_env": "CROWDIN_PERSONAL_TOKEN"
+"base_path": "."
+"base_url": "https://api.crowdin.com"
+"preserve_hierarchy": true
+
+"files": [
+  {
+    "source": "/locales/en/default.json",
+    "translation": "/locales/%two_letters_code%/default.json",
+    "languages_mapping": {
+      "two_letters_code": {
+        "pt-BR": "pt-BR",
+        "it-MT": "it-MT"
+      }
+    }
+  }
+]
