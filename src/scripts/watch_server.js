@@ -11,6 +11,18 @@ const modeArg = args.find((arg) => {
 const mode = modeArg?.split('=')[1];
 const NODE_ENV = mode === 'ingame' ? 'ingame' : 'mocking';
 
+const sequelizeOptionalExternals = [
+  'pg',
+  'pg-hstore',
+  'pg-native',
+  'sqlite3',
+  'tedious',
+  'mariadb',
+  'oracledb',
+  'ibm_db',
+  'snowflake-sdk',
+];
+
 esbuild
   .build({
     entryPoints: ['server/server.ts'],
@@ -24,6 +36,7 @@ esbuild
     platform: 'node',
     target: 'node16',
     outfile: 'dist/server.js',
+    external: sequelizeOptionalExternals,
     define: {
       'process.env.NODE_ENV': `"${NODE_ENV}"`,
     },
