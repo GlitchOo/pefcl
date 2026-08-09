@@ -11,7 +11,7 @@
     "translations:generate": "npx i18next-cli extract",
     "translations:generate-index": "node ./scripts/generateLocales.js",
     "translations:pull": "crowdin download && node ./scripts/generateLocales.js",
-    "translations:push": "crowdin upload sources",
+    "translations:push": "crowdin upload sources && crowdin upload translations",
     "install:all": "npm install && npm --prefix src install && npm --prefix web install",
     "setup": "npm run install:all && npm run translations:pull && npm run translations:generate-index",
     "build": "npm --prefix src run build && npm --prefix web run build && node -e \"const fs=require('fs'); for (const f of ['.npm.installed','.yarn.installed']) fs.writeFileSync(f,'');\"",

@@ -10,7 +10,7 @@ on:
 
 jobs:
   sync:
-    name: Upload English sources to Crowdin
+    name: Sync sources and translations to Crowdin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,12 +31,12 @@ jobs:
           npm run translations:generate
           npm run translations:generate-index
 
-      - name: Upload sources to Crowdin
+      - name: Upload sources and existing translations to Crowdin
         continue-on-error: true
         uses: crowdin/github-action@v2
         with:
           upload_sources: true
-          upload_translations: false
+          upload_translations: true
           download_translations: false
           create_pull_request: false
         env:
