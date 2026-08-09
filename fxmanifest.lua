@@ -5,7 +5,7 @@ lua54 'yes'
 name 'pefcl'
 description "Financing resource. Accounts, Cash, Invoices, Transactions."
 author "Project Error"
-version '2.5.0'
+version '3.0.0'
 
 
 ui_page 'web/dist/index.html'
