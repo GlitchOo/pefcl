@@ -15,9 +15,17 @@ import { InvoiceDB } from './invoice.db';
 import i18n from '@utils/i18n';
 import { TransactionType } from '@typings/Transaction';
 import { ServerError } from '@utils/errors';
-import { AccountErrors, BalanceErrors, GenericErrors } from '@typings/Errors';
+import {
+  AccountErrors,
+  AuthorizationErrors,
+  BalanceErrors,
+  GenericErrors,
+} from '@typings/Errors';
 import { TransactionService } from '../transaction/transaction.service';
 import { Broadcasts } from '@server/../../typings/Events';
+import { SharedAccountDB } from '../accountShared/sharedAccount.db';
+import { AccountRole } from '@typings/Account';
+import { assertPositiveMoney } from '@server/utils/money';
 
 const logger = mainLogger.child({ module: 'invoice-service' });
 
@@ -27,6 +35,7 @@ export class InvoiceService {
   _invoiceDB: InvoiceDB;
   _transactionDB: TransactionDB;
   _userService: UserService;
+  _sharedAccountDB: SharedAccountDB;
   transactionService: TransactionService;
 
   constructor(
@@ -35,12 +44,14 @@ export class InvoiceService {
     accountDB: AccountDB,
     transactionDB: TransactionDB,
     transactionService: TransactionService,
+    sharedAccountDB: SharedAccountDB,
   ) {
     this._userService = userService;
     this._invoiceDB = invoiceDB;
     this._accountDB = accountDB;
     this._transactionDB = transactionDB;
     this.transactionService = transactionService;
+    this._sharedAccountDB = sharedAccountDB;
   }
 
   async countUnpaidInvoices(source: number) {
@@ -73,6 +84,8 @@ export class InvoiceService {
     logger.silly('Creating invoice ..');
     logger.silly(data);
 
+    assertPositiveMoney(data.amount);
+
     const invoice = await this._invoiceDB.createInvoice(data);
     logger.silly('Created invoice.');
 
@@ -89,24 +102,58 @@ export class InvoiceService {
     logger.silly('Paying invoice.');
     logger.silly(req);
 
+    const user = this._userService.getUser(req.source);
+    const identifier = user.getIdentifier();
+
     const t = await sequelize.transaction();
     try {
-      const fromAccount = await this._accountDB.getAccountById(req.data.fromAccountId, t);
       const invoice = await this._invoiceDB.getInvoiceById(req.data.invoiceId, t);
 
+      if (!invoice) {
+        throw new ServerError(GenericErrors.NotFound);
+      }
+
+      if (invoice.getDataValue('toIdentifier') !== identifier) {
+        throw new ServerError(AuthorizationErrors.Forbidden);
+      }
+
+      if (invoice.getDataValue('status') === InvoiceStatus.PAID) {
+        throw new ServerError('This invoice is already paid. Tell author of resource to fix UI');
+      }
+
+      const expiresAt = invoice.get('expiresAt') as number | Date | string | null | undefined;
+      const expiresAtMs =
+        typeof expiresAt === 'number'
+          ? expiresAt
+          : expiresAt
+            ? new Date(expiresAt).getTime()
+            : null;
+      if (expiresAtMs != null && !Number.isNaN(expiresAtMs) && expiresAtMs < Date.now()) {
+        throw new ServerError('This invoice has expired');
+      }
+
+      const myAccount = await this._accountDB.getAuthorizedAccountById(
+        req.data.fromAccountId,
+        identifier,
+        t,
+      );
+      const sharedAccount = await this._sharedAccountDB.getAuthorizedSharedAccountById(
+        req.data.fromAccountId,
+        identifier,
+        [AccountRole.Admin, AccountRole.Contributor],
+        t,
+      );
+      const fromAccount = myAccount ?? sharedAccount;
+
       /* Should we insert money to a specific account? */
-      const receiverAccountIdentifier = invoice?.getDataValue('receiverAccountIdentifier');
-      const toAccountIdentifier = invoice?.getDataValue('fromIdentifier');
+      const receiverAccountIdentifier = invoice.getDataValue('receiverAccountIdentifier');
+      const toAccountIdentifier = invoice.getDataValue('fromIdentifier');
 
       const toAccount = receiverAccountIdentifier
         ? await this._accountDB.getUniqueAccountByIdentifier(receiverAccountIdentifier, t)
         : await this._accountDB.getDefaultAccountByIdentifier(toAccountIdentifier ?? '', t);
 
-      if (invoice?.getDataValue('status') === InvoiceStatus.PAID) {
-        throw new ServerError('This invoice is already paid. Tell author of resource to fix UI');
-      }
-
-      if (!invoice || !fromAccount || !toAccount) {
+      if (!fromAccount || !toAccount) {
         throw new ServerError(GenericErrors.NotFound);
       }
 
@@ -115,20 +162,23 @@ export class InvoiceService {
       }
 
       const accountBalance = fromAccount.getDataValue('balance');
-      const amount = invoice.getDataValue('amount');
+      const amount = assertPositiveMoney(invoice.getDataValue('amount'));
 
       if (accountBalance < amount) {
-        throw new Error(BalanceErrors.InsufficentFunds);
+        throw new ServerError(BalanceErrors.InsufficentFunds);
       }
 
-      /* TODO: Implement transaction fee if wanted */
       await this._accountDB.transfer({
         amount,
         fromAccount,
         toAccount,
         transaction: t,
       });
-      await this._invoiceDB.payInvoice(req.data.invoiceId);
+
+      const marked = await this._invoiceDB.payInvoice(req.data.invoiceId, t);
+      if (!marked) {
+        throw new ServerError('This invoice is already paid. Tell author of resource to fix UI');
+      }
 
       await this.transactionService.handleCreateTransaction(
         {
@@ -141,6 +191,7 @@ export class InvoiceService {
           type: TransactionType.Outgoing,
         },
         t,
+        req.source,
       );
 
       await this.transactionService.handleCreateTransaction(
@@ -154,12 +205,14 @@ export class InvoiceService {
           type: TransactionType.Incoming,
         },
         t,
+        req.source,
       );
 
-      t.commit();
+      await t.commit();
     } catch (err) {
-      t.rollback();
+      await t.rollback();
       logger.error(err);
+      throw err;
     }
   }
 }

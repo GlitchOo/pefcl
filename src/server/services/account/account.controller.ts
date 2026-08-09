@@ -5,7 +5,7 @@ import {
   AccountRole,
   UpdateBankBalanceInput,
   AddToSharedAccountInput,
-  ATMInput,
+  AtmInput,
   CreateBasicAccountInput,
   ExternalAccount,
   PreDBAccount,
@@ -30,6 +30,8 @@ import { ExternalAccountService } from '@services/accountExternal/externalAccoun
 import { AuthService } from '@services/auth/auth.service';
 import { Export, ExportListener } from '@decorators/Export';
 import { OnlineUser } from '@server/../../typings/user';
+import { BankingSessionService } from '@services/session/bankingSession.service';
+import { assertPositiveMoney } from '@server/utils/money';
 
 @Controller('Account')
 @PromiseEventListener()
@@ -39,28 +41,39 @@ export class AccountController {
   _auth: AuthService;
   _accountService: AccountService;
   _externalAccountService: ExternalAccountService;
+  _sessions: BankingSessionService;
 
   constructor(
     auth: AuthService,
     accountService: AccountService,
     externalAccountService: ExternalAccountService,
+    sessions: BankingSessionService,
   ) {
     this._auth = auth;
     this._accountService = accountService;
     this._externalAccountService = externalAccountService;
+    this._sessions = sessions;
   }
 
   @Export(ServerExports.GetAccounts)
   @NetPromise(AccountEvents.GetAccounts)
   async getAccounts(req: Request<void>, res: Response<Account[]>) {
-    const accounts = await this._accountService.handleGetMyAccounts(req.source);
-    res({ status: 'ok', data: accounts });
+    try {
+      const accounts = await this._accountService.handleGetMyAccounts(req.source);
+      res({ status: 'ok', data: accounts });
+    } catch (err) {
+      res({ status: 'error', errorMsg: err.message, errorName: err.name });
+    }
   }
 
   @Export(ServerExports.GetTotalBankBalance)
   async getTotalBankBalance(req: Request<void>, res: Response<number>) {
-    const balance = await this._accountService.getTotalBankBalance(req.source);
-    res({ status: 'ok', data: balance });
+    try {
+      const balance = await this._accountService.getTotalBankBalance(req.source);
+      res({ status: 'ok', data: balance });
+    } catch (err) {
+      res({ status: 'error', errorMsg: err.message, errorName: err.name });
+    }
   }
 
   @Export(ServerExports.GetTotalBankBalanceByIdentifier)
@@ -113,8 +126,22 @@ export class AccountController {
 
   @Export(ServerExports.DepositCash)
   @NetPromise(AccountEvents.DepositMoney)
-  async depositMoney(req: Request<ATMInput>, res: Response<any>) {
+  async depositMoney(req: Request<AtmInput>, res: Response<any>) {
     try {
+      const invoker =
+        typeof GetInvokingResource === 'function' ? GetInvokingResource() : '';
+      const isExternalExport = Boolean(invoker && invoker !== GetCurrentResourceName());
+      // Player NetPromise / same-resource calls need an open bank/ATM session
+      if (req.source > 0 && !isExternalExport) {
+        this._sessions.assertActiveSession(req.source, ['bank', 'atm']);
+      }
+      assertPositiveMoney(req.data.amount);
+      if (req.data.accountId) {
+        await this._auth.isAuthorizedAccount(req.data.accountId, req.source, [
+          AccountRole.Admin,
+          AccountRole.Contributor,
+        ]);
+      }
       await this._accountService.handleDepositMoney(req);
       res({ status: 'ok', data: {} });
     } catch (err) {
@@ -124,8 +151,22 @@ export class AccountController {
 
   @Export(ServerExports.WithdrawCash)
   @NetPromise(AccountEvents.WithdrawMoney)
-  async withdrawMoney(req: Request<ATMInput>, res: Response<any>) {
+  async withdrawMoney(req: Request<AtmInput>, res: Response<any>) {
     try {
+      const invoker =
+        typeof GetInvokingResource === 'function' ? GetInvokingResource() : '';
+      const isExternalExport = Boolean(invoker && invoker !== GetCurrentResourceName());
+      if (req.source > 0 && !isExternalExport) {
+        const session = this._sessions.assertActiveSession(req.source, ['bank', 'atm']);
+        req.data.requireCard = session.type === 'atm';
+      }
+      assertPositiveMoney(req.data.amount);
+      if (req.data.accountId) {
+        await this._auth.isAuthorizedAccount(req.data.accountId, req.source, [
+          AccountRole.Admin,
+          AccountRole.Contributor,
+        ]);
+      }
       await this._accountService.handleWithdrawMoney(req);
       res({ status: 'ok', data: {} });
     } catch (err) {
@@ -229,7 +270,10 @@ export class AccountController {
   }
 
   @Export(ServerExports.SetBankBalance)
-  async setBankBalance(req: Request<{ amount: number }>, res: Response<unknown>) {
+  async setBankBalance(
+    req: Request<{ amount: number; message?: string }>,
+    res: Response<unknown>,
+  ) {
     try {
       await this._accountService.setMoney(req);
       res({ status: 'ok', data: {} });
@@ -240,7 +284,7 @@ export class AccountController {
 
   @Export(ServerExports.SetBankBalanceByIdentifier)
   async setBankBalanceByIdentifier(
-    req: Request<{ amount: number; identifier: string }>,
+    req: Request<{ amount: number; identifier: string; message?: string }>,
     res: Response<unknown>,
   ) {
     try {

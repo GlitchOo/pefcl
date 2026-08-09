@@ -7,10 +7,15 @@ export const getConfig = async (): Promise<ResourceConfig> => {
     return defaultConfig;
   }
 
-  const resourceName = getResourceName();
-  const config = await fetch(`https://cfx-nui-${resourceName}/config.json`).then((res) =>
-    res.json(),
-  );
+  try {
+    const resourceName = getResourceName();
+    const res = await fetch(`https://cfx-nui-${resourceName}/config.json`);
+    if (!res.ok) {
+      return defaultConfig;
+    }
 
-  return config;
+    return (await res.json()) as ResourceConfig;
+  } catch {
+    return defaultConfig;
+  }
 };

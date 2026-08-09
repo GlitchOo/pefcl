@@ -1,10 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import image from './bg.png';
 import { NuiProvider } from 'react-fivem-hooks';
-import MobileApp from './views/Mobile/Mobile';
+import MobileApp from './views/mobile/Mobile';
 
 const Container = styled.div`
   position: relative;

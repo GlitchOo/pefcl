@@ -7,6 +7,7 @@ import { accountsAtom } from '@data/accounts';
 import { externalAccountsAtom } from '@data/externalAccounts';
 import { transactionBaseAtom } from '@data/transactions';
 import { useConfig } from '@hooks/useConfig';
+import { useGlobalSettings } from '@hooks/useGlobalSettings';
 import { Alert, Stack } from '@mui/material';
 import { Box } from '@mui/system';
 import { GenericErrors } from '@typings/Errors';
@@ -21,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 const MobileTransferView = () => {
   const { t } = useTranslation();
   const { general } = useConfig();
+  const { isTablet } = useGlobalSettings();
 
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -85,53 +87,69 @@ const MobileTransferView = () => {
   };
 
   return (
-    <Box p={4}>
-      <Stack spacing={0.25}>
-        <Heading2>{t('Transfer funds')}</Heading2>
+    <Box
+      px={0}
+      pt={0}
+      pb={2}
+      sx={{ height: '100%', minHeight: 0, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}
+    >
+      <Stack spacing={0.35}>
+        <Heading2 style={{ fontSize: isTablet ? '1.55rem' : '1.35rem' }}>
+          {t('Transfer funds')}
+        </Heading2>
         <Heading5>{t('Transfer between internal & external accounts.')}</Heading5>
       </Stack>
 
-      <Stack spacing={4} marginTop={4}>
-        <Stack spacing={1}>
-          <Heading5>{t('From account')}</Heading5>
-          <AccountSelect
-            isFromAccount
-            accounts={accounts}
-            onSelect={setSelectedFromAccountId}
-            selectedId={selectedFromAccountId}
-          />
+      <Stack
+        spacing={2.25}
+        marginTop={2.5}
+        direction={isTablet ? 'row' : 'column'}
+        alignItems={isTablet ? 'flex-start' : undefined}
+      >
+        <Stack spacing={2.25} flex={1} width="100%">
+          <Stack spacing={0.75}>
+            <Heading5>{t('From account')}</Heading5>
+            <AccountSelect
+              isFromAccount
+              accounts={accounts}
+              onSelect={setSelectedFromAccountId}
+              selectedId={selectedFromAccountId}
+            />
+          </Stack>
+
+          <Stack spacing={0.75}>
+            <Heading5>{t('To account')}</Heading5>
+            <AccountSelect
+              accounts={accounts}
+              externalAccounts={externalAccounts}
+              onSelect={setSelectedToAccountId}
+              selectedId={selectedToAccountId}
+            />
+          </Stack>
         </Stack>
 
-        <Stack spacing={1}>
-          <Heading5>{t('To account')}</Heading5>
-          <AccountSelect
-            accounts={accounts}
-            externalAccounts={externalAccounts}
-            onSelect={setSelectedToAccountId}
-            selectedId={selectedToAccountId}
-          />
+        <Stack spacing={2.25} flex={1} width="100%">
+          <Stack spacing={0.75}>
+            <Heading5>{t('Amount')}</Heading5>
+            <PriceField value={amount} onChange={(event) => setAmount(event.target.value)} />
+            <NewBalance amount={newBalance} isValid={isValidNewBalance} />
+          </Stack>
+
+          <Button size="large" onClick={handleTransfer} disabled={isButtonDisabled}>
+            {t('Transfer funds')}
+          </Button>
+
+          {success && (
+            <Alert color="info" variant="outlined" sx={{ color: '#fff' }}>
+              {success}
+            </Alert>
+          )}
+          {error && (
+            <Alert color="error" variant="outlined" sx={{ color: '#fff' }}>
+              {error}
+            </Alert>
+          )}
         </Stack>
-
-        <Stack spacing={1}>
-          <Heading5>{t('Amount')}</Heading5>
-          <PriceField value={amount} onChange={(event) => setAmount(event.target.value)} />
-          <NewBalance amount={newBalance} isValid={isValidNewBalance} />
-        </Stack>
-
-        <Button size="large" onClick={handleTransfer} disabled={isButtonDisabled}>
-          {t('Transfer funds')}
-        </Button>
-
-        {success && (
-          <Alert color="info" variant="outlined" sx={{ color: '#fff' }}>
-            {success}
-          </Alert>
-        )}
-        {error && (
-          <Alert color="error" variant="outlined" sx={{ color: '#fff' }}>
-            {error}
-          </Alert>
-        )}
       </Stack>
     </Box>
   );

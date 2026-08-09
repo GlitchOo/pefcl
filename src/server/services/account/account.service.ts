@@ -5,7 +5,7 @@ import {
   Account,
   AccountType,
   AddToSharedAccountInput,
-  ATMInput,
+  AtmInput,
   PreDBAccount,
   RenameAccountInput,
   AccountRole,
@@ -37,18 +37,15 @@ import {
 } from '@typings/Errors';
 import { SharedAccountDB } from '@services/accountShared/sharedAccount.db';
 import { AccountEvents, Broadcasts } from '@server/../../typings/Events';
-import { getFrameworkExports } from '@server/utils/frameworkIntegration';
+import { getFrameworkExports, isFrameworkIntegrationActive } from '@server/utils/frameworkIntegration';
 import { Transaction } from 'sequelize/types';
 import { CardDB } from '../card/card.db';
+import { assertPositiveMoney } from '@server/utils/money';
 
 const logger = mainLogger.child({ module: 'accounts' });
-const {
-  enabled = false,
-  syncInitialBankBalance = false,
-  isCardsEnabled = false,
-} = config.frameworkIntegration ?? {};
+const { syncInitialBankBalance = false, isCardsEnabled = false } = config.frameworkIntegration ?? {};
 const { firstAccountStartBalance } = config.accounts ?? {};
-const isFrameworkIntegrationEnabled = enabled;
+const isFrameworkIntegrationEnabled = isFrameworkIntegrationActive();
 
 @singleton()
 export class AccountService {
@@ -58,6 +55,8 @@ export class AccountService {
   _cashService: CashService;
   _userService: UserService;
   _transactionService: TransactionService;
+  /** Serializes withdraw/deposit per player to prevent concurrent race exploits. */
+  private _sourceMoneyLocks = new Map<number, Promise<void>>();
 
   constructor(
     accountDB: AccountDB,
@@ -73,6 +72,24 @@ export class AccountService {
     this._cashService = cashService;
     this._userService = userService;
     this._transactionService = transactionService;
+  }
+
+  private async withSourceMoneyLock<T>(source: number, fn: () => Promise<T>): Promise<T> {
+    const previous = this._sourceMoneyLocks.get(source) ?? Promise.resolve();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this._sourceMoneyLocks.set(
+      source,
+      previous.then(() => gate),
+    );
+    await previous;
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
   }
 
   private async getMyAccounts(source: number) {
@@ -239,16 +256,41 @@ export class AccountService {
     }
 
     logger.debug('Creating initial account .. ');
-    const initialAccount = await this._accountDB.createAccount({
-      isDefault: true,
-      accountName: i18next.t('Personal account'),
-      ownerIdentifier: user.getIdentifier(),
-      type: AccountType.Personal,
-      balance,
-    });
+    const t = await sequelize.transaction();
+    try {
+      const initialAccount = await this._accountDB.createAccount(
+        {
+          isDefault: true,
+          accountName: i18next.t('Personal account'),
+          ownerIdentifier: user.getIdentifier(),
+          type: AccountType.Personal,
+          balance,
+        },
+        t,
+      );
 
-    logger.debug('Successfully created initial account.');
-    return initialAccount.toJSON();
+      if (balance > 0) {
+        await this._transactionService.handleCreateTransaction(
+          {
+            amount: balance,
+            message:
+              isFrameworkIntegrationEnabled && syncInitialBankBalance
+                ? 'Opening balance (synced)'
+                : 'Opening balance',
+            toAccount: initialAccount.toJSON(),
+            type: TransactionType.Incoming,
+          },
+          t,
+        );
+      }
+
+      await t.commit();
+      logger.debug('Successfully created initial account.');
+      return initialAccount.toJSON();
+    } catch (err) {
+      await t.rollback();
+      throw err;
+    }
   }
 
   async createAccount(req: Request<CreateBasicAccountInput>): Promise<Account> {
@@ -270,22 +312,41 @@ export class AccountService {
     logger.silly('Trying to create a new account ...');
     logger.silly(req);
 
-    const userIdentifier = this._userService.getUser(req.source).getIdentifier();
-    const userName = this._userService.getUser(req.source).name;
+    const user = this._userService.getUser(req.source);
+    const userIdentifier = user.getIdentifier();
+    const userName = user.name;
+    const maxAccounts = config?.accounts?.maximumNumberOfAccounts ?? 4;
 
     const t = await sequelize.transaction();
     try {
       const userAccounts = await this._accountDB.getAccountsByIdentifier(userIdentifier);
-      const fromAccount = await this._accountDB.getAccountById(req.data.fromAccountId);
-
       const isFirstSetup = userAccounts.length === 0;
       const isShared = req.data.isShared && !isFirstSetup;
+
+      if (!isFirstSetup && userAccounts.length >= maxAccounts) {
+        throw new ServerError(AccountErrors.MaxAccounts);
+      }
+
+      // Fee must be charged from an account the caller is allowed to debit
+      const myFromAccount = await this._accountDB.getAuthorizedAccountById(
+        req.data.fromAccountId,
+        userIdentifier,
+        t,
+      );
+      const sharedFromAccount = await this._sharedAccountDB.getAuthorizedSharedAccountById(
+        req.data.fromAccountId,
+        userIdentifier,
+        [AccountRole.Admin],
+        t,
+      );
+      const fromAccount = myFromAccount ?? sharedFromAccount;
 
       if (!fromAccount) {
         throw new ServerError(GenericErrors.NotFound);
       }
 
-      const canAfford = fromAccount?.getDataValue('balance') >= (config?.prices?.newAccount ?? 0);
+      const newAccountCost = config?.prices?.newAccount ?? 0;
+      const canAfford = fromAccount.getDataValue('balance') >= newAccountCost;
       if (!canAfford && !isFirstSetup) {
         throw new ServerError(BalanceErrors.InsufficentFunds);
       }
@@ -294,12 +355,14 @@ export class AccountService {
         ? i18next.t('Shared account')
         : i18next.t('Personal account');
 
+      // Additional accounts always start at 0 (never inherit otherAccountStartBalance free money)
       const account = await this._accountDB.createAccount(
         {
           ...req.data,
           accountName: req.data.accountName ?? defaultAccountName,
           type: isShared ? AccountType.Shared : AccountType.Personal,
           ownerIdentifier: userIdentifier,
+          balance: 0,
         },
         t,
       );
@@ -316,29 +379,30 @@ export class AccountService {
         );
       }
 
-      if (!isFirstSetup) {
-        const newAccountCost = config?.prices?.newAccount ?? 0;
+      if (!isFirstSetup && newAccountCost > 0) {
         await this._accountDB.decrement(fromAccount, newAccountCost, t);
         await this._transactionService.handleCreateTransaction(
           {
-            amount: config?.prices?.newAccount ?? 0,
+            amount: newAccountCost,
             message: i18next.t('Opened a new account'),
             fromAccount: fromAccount.toJSON(),
             type: TransactionType.Outgoing,
           },
           t,
+          req.source,
         );
       }
 
       emit(AccountEvents.NewAccountCreated, account.toJSON());
 
-      t.commit();
+      await t.commit();
       return account.toJSON();
     } catch (e) {
-      t.rollback();
+      await t.rollback();
       logger.silly('Failed to create a new account');
       logger.silly(req);
       logger.error(e);
+      throw e;
     }
   }
 
@@ -413,34 +477,40 @@ export class AccountService {
    * Will then update whatever player's main bank account in any framework.
    * @param req
    */
-  async handleDepositMoney(req: Request<ATMInput>) {
+  async handleDepositMoney(req: Request<AtmInput>) {
+    return this.withSourceMoneyLock(req.source, () => this._handleDepositMoney(req));
+  }
+
+  private async _handleDepositMoney(req: Request<AtmInput>) {
     logger.silly(
       `Source "${req.source}" depositing "${req.data.amount}" into "${
         req.data.accountId ?? 'DEFAULT'
       }"`,
     );
-    const depositionAmount = req.data.amount;
-    const targetAccount = req.data.accountId
-      ? await this._accountDB.getAccountById(req.data.accountId)
-      : await this.getDefaultAccountBySource(req.source);
+    const depositionAmount = assertPositiveMoney(req.data.amount);
 
-    if (!targetAccount) {
-      throw new ServerError(GenericErrors.NotFound);
-    }
-
-    const userBalance = await this._cashService.getMyCash(req.source);
-    const currentAccountBalance = targetAccount?.getDataValue('balance');
-
-    /* Only run the export when account is the default(?). Not sure about this. */
     const t = await sequelize.transaction();
+    let cashRemoved = false;
     try {
+      const targetAccount = req.data.accountId
+        ? await this._accountDB.getAccountById(req.data.accountId, t)
+        : await this.getDefaultAccountBySource(req.source, t);
+
+      if (!targetAccount) {
+        throw new ServerError(GenericErrors.NotFound);
+      }
+
+      const userBalance = await this._cashService.getMyCash(req.source);
+      const currentAccountBalance = targetAccount.getDataValue('balance');
+
       if (userBalance < depositionAmount) {
         logger.debug({ userBalance, depositionAmount, currentAccountBalance });
         throw new Error(BalanceErrors.InsufficentFunds);
       }
 
-      /* Check this part. - Deposition from. */
       await this._cashService.handleRemoveCash(req.source, depositionAmount);
+      cashRemoved = true;
+
       await this._accountDB.increment(targetAccount, depositionAmount, t);
 
       await this._transactionService.handleCreateTransaction(
@@ -451,6 +521,7 @@ export class AccountService {
           toAccount: targetAccount.toJSON(),
         },
         t,
+        req.source,
       );
 
       logger.silly(
@@ -459,27 +530,46 @@ export class AccountService {
         )}`,
       );
       logger.silly({ userBalance, depositionAmount, currentAccountBalance });
-      t.commit();
+      await t.commit();
     } catch (err) {
-      logger.error(`Failed to deposit money into account ${targetAccount.getDataValue('id')}`);
+      await t.rollback();
+      if (cashRemoved) {
+        try {
+          await this._cashService.handleAddCash(req.source, depositionAmount);
+        } catch (compensateErr) {
+          logger.error(
+            `Failed to restore cash after deposit failure for source ${req.source}`,
+          );
+          logger.error(compensateErr);
+        }
+      }
+      logger.error(`Failed to deposit money into account`);
       logger.error(err);
-      t.rollback();
       throw err;
     }
   }
 
-  async handleWithdrawMoney(req: Request<ATMInput>) {
-    const { accountId, amount, cardId, cardPin } = req.data;
+  async handleWithdrawMoney(req: Request<AtmInput>) {
+    return this.withSourceMoneyLock(req.source, () => this._handleWithdrawMoney(req));
+  }
+
+  private async _handleWithdrawMoney(req: Request<AtmInput>) {
+    const { accountId, amount, cardId, cardPin, requireCard } = req.data;
     logger.silly(`"${req.source}" withdrawing "${amount}".`);
 
-    if (amount <= 0) {
-      throw new ServerError(GenericErrors.BadInput);
-    }
+    const withdrawAmount = assertPositiveMoney(amount);
 
     const t = await sequelize.transaction();
+    let bankDebited = false;
+    let targetAccountId: number | undefined;
     try {
-      /* If framework is enabled, do a card check, otherwise continue. */
-      if (isFrameworkIntegrationEnabled && isCardsEnabled && cardId) {
+      const mustUseCard = Boolean(requireCard && isFrameworkIntegrationEnabled && isCardsEnabled);
+
+      if (mustUseCard || (isFrameworkIntegrationEnabled && isCardsEnabled && cardId)) {
+        if (mustUseCard && !cardId) {
+          throw new ServerError(CardErrors.InvalidPin);
+        }
+
         const exports = getFrameworkExports();
         const cards = exports.getCards(req.source);
         const selectedCard = cards?.find((card) => card.id === cardId);
@@ -495,40 +585,81 @@ export class AccountService {
       }
 
       const targetAccount = accountId
-        ? await this._accountDB.getAccountById(accountId)
-        : await this.getDefaultAccountBySource(req.source);
+        ? await this._accountDB.getAccountById(accountId, t)
+        : await this.getDefaultAccountBySource(req.source, t);
 
       if (!targetAccount) {
         throw new ServerError(GenericErrors.NotFound);
       }
 
+      targetAccountId = targetAccount.getDataValue('id');
       const currentAccountBalance = targetAccount.getDataValue('balance');
 
-      if (currentAccountBalance < amount) {
-        logger.debug({ withdrawAmount: amount, currentAccountBalance });
+      if (currentAccountBalance < withdrawAmount) {
+        logger.debug({ withdrawAmount, currentAccountBalance });
         throw new Error(BalanceErrors.InsufficentFunds);
       }
 
-      await this._cashService.handleAddCash(req.source, amount);
-      await this._accountDB.decrement(targetAccount, amount, t);
+      /* Debit bank first so concurrent withdraws cannot all pass the balance check. */
+      await this._accountDB.decrement(targetAccount, withdrawAmount, t);
 
       await this._transactionService.handleCreateTransaction(
         {
-          amount: amount,
+          amount: withdrawAmount,
           message: req.data.message,
           type: TransactionType.Outgoing,
           fromAccount: targetAccount.toJSON(),
         },
         t,
+        req.source,
       );
 
-      logger.silly(`Withdrew ${amount} from account ${accountId}`);
-      logger.silly({ withdrawAmount: amount, currentAccountBalance });
-      t.commit();
+      logger.silly(`Withdrew ${withdrawAmount} from account ${accountId}`);
+      logger.silly({ withdrawAmount, currentAccountBalance });
+      await t.commit();
+      bankDebited = true;
     } catch (err) {
+      await t.rollback();
       logger.error(`Failed to withdraw money from account.`);
       logger.error(err);
-      t.rollback();
+      throw err;
+    }
+
+    try {
+      await this._cashService.handleAddCash(req.source, withdrawAmount);
+    } catch (err) {
+      logger.error(
+        `Cash grant failed after bank debit for account ${targetAccountId}; compensating.`,
+      );
+      logger.error(err);
+
+      if (bankDebited && targetAccountId != null) {
+        const compensateTx = await sequelize.transaction();
+        try {
+          const account = await this._accountDB.getAccountById(targetAccountId, compensateTx);
+          if (account) {
+            await this._accountDB.increment(account, withdrawAmount, compensateTx);
+            await this._transactionService.handleCreateTransaction(
+              {
+                amount: withdrawAmount,
+                message: 'Withdraw compensation (cash grant failed)',
+                type: TransactionType.Incoming,
+                toAccount: account.toJSON(),
+              },
+              compensateTx,
+              req.source,
+            );
+          }
+          await compensateTx.commit();
+        } catch (compensateErr) {
+          await compensateTx.rollback();
+          logger.error(
+            `Failed to compensate bank after cash grant failure for account ${targetAccountId}`,
+          );
+          logger.error(compensateErr);
+        }
+      }
+
       throw err;
     }
   }
@@ -635,19 +766,28 @@ export class AccountService {
         await this._accountDB.decrement(fromAccount, amount, t);
       }
       await this._accountDB.increment(account, amount, t);
+
+      const tx = {
+        amount,
+        message,
+        fromAccount: fromAccount?.toJSON(),
+        toAccount: account?.toJSON(),
+      };
+      // Dual rows so both source and destination appear in account histories
+      if (fromAccount) {
+        await this._transactionService.handleCreateTransaction(
+          { ...tx, type: TransactionType.Outgoing },
+          t,
+        );
+      }
       await this._transactionService.handleCreateTransaction(
-        {
-          amount,
-          message,
-          fromAccount: fromAccount?.toJSON(),
-          toAccount: account?.toJSON(),
-          type: TransactionType.Incoming,
-        },
+        { ...tx, type: TransactionType.Incoming },
         t,
       );
       t.commit();
     } catch (err) {
       t.rollback();
+      throw err;
     }
   }
 
@@ -677,19 +817,27 @@ export class AccountService {
       }
 
       await this._accountDB.increment(account, amount, t);
+
+      const tx = {
+        amount,
+        message,
+        fromAccount: fromAccount?.toJSON(),
+        toAccount: account?.toJSON(),
+      };
+      if (fromAccount) {
+        await this._transactionService.handleCreateTransaction(
+          { ...tx, type: TransactionType.Outgoing },
+          t,
+        );
+      }
       await this._transactionService.handleCreateTransaction(
-        {
-          amount,
-          message,
-          fromAccount: fromAccount?.toJSON(),
-          toAccount: account?.toJSON(),
-          type: TransactionType.Incoming,
-        },
+        { ...tx, type: TransactionType.Incoming },
         t,
       );
       t.commit();
     } catch (err) {
       t.rollback();
+      throw err;
     }
   }
 
@@ -748,7 +896,8 @@ export class AccountService {
         if (!toAccount) {
           throw new ServerError(GenericErrors.NotFound);
         }
-        await this._accountDB.decrement(toAccount, amount, t);
+        // Credit the destination (previously incorrectly decremented)
+        await this._accountDB.increment(toAccount, amount, t);
       }
 
       await account.update(
@@ -758,19 +907,26 @@ export class AccountService {
         { transaction: t },
       );
 
+      const tx = {
+        amount,
+        message,
+        fromAccount: account?.toJSON(),
+        toAccount: toAccount?.toJSON(),
+      };
       await this._transactionService.handleCreateTransaction(
-        {
-          amount: amount,
-          message: message,
-          fromAccount: account?.toJSON(),
-          toAccount: toAccount?.toJSON(),
-          type: TransactionType.Outgoing,
-        },
+        { ...tx, type: TransactionType.Outgoing },
         t,
       );
+      if (toAccount) {
+        await this._transactionService.handleCreateTransaction(
+          { ...tx, type: TransactionType.Incoming },
+          t,
+        );
+      }
       t.commit();
-    } catch {
+    } catch (err) {
       t.rollback();
+      throw err;
     }
   }
 
@@ -796,23 +952,32 @@ export class AccountService {
         if (!toAccount) {
           throw new ServerError(GenericErrors.NotFound);
         }
-        await this._accountDB.decrement(toAccount, amount, t);
+        // Credit the destination (previously incorrectly decremented)
+        await this._accountDB.increment(toAccount, amount, t);
       }
 
       await this._accountDB.decrement(account, amount, t);
+
+      const tx = {
+        amount,
+        message,
+        fromAccount: account?.toJSON(),
+        toAccount: toAccount?.toJSON(),
+      };
       await this._transactionService.handleCreateTransaction(
-        {
-          amount,
-          message,
-          fromAccount: account?.toJSON(),
-          toAccount: toAccount?.toJSON(),
-          type: TransactionType.Outgoing,
-        },
+        { ...tx, type: TransactionType.Outgoing },
         t,
       );
+      if (toAccount) {
+        await this._transactionService.handleCreateTransaction(
+          { ...tx, type: TransactionType.Incoming },
+          t,
+        );
+      }
       t.commit();
-    } catch {
+    } catch (err) {
       t.rollback();
+      throw err;
     }
   }
 
@@ -849,21 +1014,78 @@ export class AccountService {
     }
   }
 
-  async setMoney(req: Request<{ amount: number }>) {
-    const { amount } = req.data;
+  async setMoney(req: Request<{ amount: number; message?: string }>) {
+    const { amount, message } = req.data;
     logger.silly(`Setting money to ${amount} for ${req.source} ..`);
+
+    if (amount < 0) {
+      throw new ServerError(GenericErrors.BadInput);
+    }
 
     const user = this._userService.getUser(req.source);
     const account = await this._accountDB.getDefaultAccountByIdentifier(user.getIdentifier());
-    await account?.update({ balance: amount });
+    if (!account) {
+      throw new ServerError(GenericErrors.NotFound);
+    }
+
+    await this.applyAbsoluteBalance(account, amount, message ?? 'Balance adjustment');
   }
 
-  async setMoneyByIdentifier(req: Request<{ amount: number; identifier: string }>) {
-    const { amount, identifier } = req.data;
+  async setMoneyByIdentifier(
+    req: Request<{ amount: number; identifier: string; message?: string }>,
+  ) {
+    const { amount, identifier, message } = req.data;
     logger.silly(`Setting money by identifier to ${amount} for ${identifier} ..`);
 
+    if (amount < 0) {
+      throw new ServerError(GenericErrors.BadInput);
+    }
+
     const account = await this._accountDB.getDefaultAccountByIdentifier(identifier);
-    await account?.update({ balance: amount });
+    if (!account) {
+      throw new ServerError(GenericErrors.NotFound);
+    }
+
+    await this.applyAbsoluteBalance(account, amount, message ?? 'Balance adjustment');
+  }
+
+  /** Absolute balance overwrite with a ledger row for the delta. */
+  private async applyAbsoluteBalance(account: AccountModel, amount: number, message: string) {
+    const previous = account.getDataValue('balance') ?? 0;
+    const delta = amount - previous;
+
+    const t = await sequelize.transaction();
+    try {
+      await account.update({ balance: amount }, { transaction: t });
+
+      if (delta !== 0) {
+        const abs = Math.abs(delta);
+        const isIncrease = delta > 0;
+        await this._transactionService.handleCreateTransaction(
+          {
+            amount: abs,
+            message,
+            ...(isIncrease
+              ? { toAccount: account.toJSON(), type: TransactionType.Incoming }
+              : { fromAccount: account.toJSON(), type: TransactionType.Outgoing }),
+          },
+          t,
+          undefined,
+          {
+            oldBalance: previous,
+            newBalance: amount,
+            ...(isIncrease
+              ? { toOldBalance: previous, toNewBalance: amount }
+              : { fromOldBalance: previous, fromNewBalance: amount }),
+          },
+        );
+      }
+
+      t.commit();
+    } catch (err) {
+      t.rollback();
+      throw err;
+    }
   }
 
   async createUniqueAccount(req: Request<CreateBasicAccountInput>) {

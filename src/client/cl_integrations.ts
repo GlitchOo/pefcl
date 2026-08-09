@@ -4,9 +4,20 @@ import { translations } from 'i18n';
 const exp = global.exports;
 
 const isTargetEnabled = cl_config.target?.enabled ?? false;
-const targetType = cl_config.target?.type ?? 'qtarget';
+const configuredTargetType = cl_config.target?.type ?? 'qtarget';
+const targetCandidates = [configuredTargetType, 'ox_target', 'qb-target', 'qtarget'];
+const targetType =
+  targetCandidates.find((name) => GetResourceState(name) === 'started') ?? configuredTargetType;
 const isTargetDebugEnabled = cl_config.target?.debug ?? false;
 const isTargetAvailable = GetResourceState(targetType) === 'started';
+
+AddEventHandler('pefcl:open:atm', () => {
+  setAtmIsOpen(true);
+});
+
+AddEventHandler('pefcl:open:bank', () => {
+  setBankIsOpen(true);
+});
 
 if (isTargetEnabled && isTargetAvailable) {
   const bankZones = cl_config.target?.bankZones ?? [];
@@ -54,13 +65,5 @@ if (isTargetEnabled && isTargetAvailable) {
         distance: 1.5,
       },
     );
-  });
-
-  AddEventHandler('pefcl:open:atm', () => {
-    setAtmIsOpen(true);
-  });
-
-  AddEventHandler('pefcl:open:bank', () => {
-    setBankIsOpen(true);
   });
 }

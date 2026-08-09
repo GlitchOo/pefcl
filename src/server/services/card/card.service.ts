@@ -24,12 +24,21 @@ import {
 } from '@server/../../typings/BankCard';
 import { AccountDB } from '../account/account.db';
 import { PIN_CODE_LENGTH } from '@shared/constants';
-import { GetATMAccountResponse, GetATMAccountInput } from '@server/../../typings/Account';
+import { GetAtmAccountResponse, GetAtmAccountInput } from '@server/../../typings/Account';
 import { CardEvents } from '@server/../../typings/Events';
-import { getFrameworkExports } from '@server/utils/frameworkIntegration';
+import { getFrameworkExports, isFrameworkIntegrationActive } from '@server/utils/frameworkIntegration';
+import { AuthService } from '@services/auth/auth.service';
+import { AccountRole } from '@typings/Account';
+import { TransactionService } from '../transaction/transaction.service';
+import { TransactionType } from '@typings/Transaction';
 
 const logger = mainLogger.child({ module: 'card' });
-const isFrameworkIntegrationEnabled = config?.frameworkIntegration?.enabled;
+const isFrameworkIntegrationEnabled = isFrameworkIntegrationActive();
+
+const stripPin = <T extends { pin?: unknown }>(card: T): Omit<T, 'pin'> => {
+  const { pin: _pin, ...safe } = card;
+  return safe;
+};
 
 @singleton()
 export class CardService {
@@ -37,17 +46,23 @@ export class CardService {
   accountDB: AccountDB;
   userService: UserService;
   accountService: AccountService;
+  authService: AuthService;
+  transactionService: TransactionService;
 
   constructor(
     CardDB: CardDB,
     userService: UserService,
     accountService: AccountService,
     accountDB: AccountDB,
+    authService: AuthService,
+    transactionService: TransactionService,
   ) {
     this.cardDB = CardDB;
     this.accountDB = accountDB;
     this.userService = userService;
     this.accountService = accountService;
+    this.authService = authService;
+    this.transactionService = transactionService;
   }
 
   validateCardsConfig() {
@@ -63,8 +78,14 @@ export class CardService {
   }
 
   async getCards(req: Request<{ accountId: number }>) {
+    await this.authService.isAuthorizedAccount(req.data.accountId, req.source, [
+      AccountRole.Admin,
+      AccountRole.Contributor,
+      AccountRole.Owner,
+    ]);
+
     const cards = await this.cardDB.getByAccountId(req.data.accountId);
-    return cards.map((card) => card.toJSON());
+    return cards.map((card) => stripPin(card.toJSON()));
   }
 
   async getInventoryCards(req: Request): Promise<InventoryCard[]> {
@@ -80,7 +101,7 @@ export class CardService {
     return exports.getCards(user.getSource());
   }
 
-  async getAccountByCard(req: Request<GetATMAccountInput>): Promise<GetATMAccountResponse> {
+  async getAccountByCard(req: Request<GetAtmAccountInput>): Promise<GetAtmAccountResponse> {
     this.validateCardsConfig();
 
     logger.silly('Getting account by card.');
@@ -103,6 +124,13 @@ export class CardService {
       throw new Error(CardErrors.InvalidPin);
     }
 
+    const exports = getFrameworkExports();
+    const inventoryCards = exports.getCards(req.source) ?? [];
+    const inInventory = inventoryCards.some((c) => c.id === cardId);
+    if (!inInventory) {
+      throw new Error(AuthorizationErrors.Forbidden);
+    }
+
     const account = await this.accountDB.getAccountById(card.getDataValue('accountId') ?? -1);
 
     if (!account) {
@@ -110,8 +138,7 @@ export class CardService {
       throw new Error(GenericErrors.NotFound);
     }
 
-    logger.error('Returning account!');
-    return { account: account?.toJSON(), card: card.toJSON() };
+    return { account: account.toJSON(), card: stripPin(card.toJSON()) as Card };
   }
 
   async giveCard(src: number, card: Card) {
@@ -245,6 +272,24 @@ export class CardService {
         throw new Error(GenericErrors.NotFound);
       }
 
+      if (paymentAccount.getDataValue('balance') < newCardCost) {
+        throw new Error(BalanceErrors.InsufficentFunds);
+      }
+
+      // Charge inside the same transaction — calling removeMoneyByAccountNumber here
+      // opened a nested TX that deadlocked against this one (lock wait = multi-second hang).
+      await this.accountDB.decrement(paymentAccount, newCardCost, t);
+      await this.transactionService.handleCreateTransaction(
+        {
+          amount: newCardCost,
+          message: i18next.t('Ordered new card'),
+          fromAccount: paymentAccount.toJSON(),
+          type: TransactionType.Outgoing,
+        },
+        t,
+        req.source,
+      );
+
       const card = await this.cardDB.create(
         {
           pin: pin,
@@ -255,32 +300,26 @@ export class CardService {
         t,
       );
 
-      if (paymentAccount.getDataValue('balance') < newCardCost) {
-        throw new Error(BalanceErrors.InsufficentFunds);
-      }
-
-      this.accountService.removeMoneyByAccountNumber({
-        ...req,
-        data: {
-          amount: newCardCost,
-          message: i18next.t('Ordered new card'),
-          accountNumber: paymentAccount.getDataValue('number'),
-        },
-      });
+      const cardJson = stripPin(card.toJSON()) as Card;
 
       t.afterCommit(() => {
         logger.silly(`Emitting ${CardEvents.NewCard}`);
-        emit(CardEvents.NewCard, { ...card.toJSON() });
+        emit(CardEvents.NewCard, { ...cardJson });
       });
 
-      this.giveCard(req.source, card.toJSON());
+      await t.commit();
 
-      t.commit();
+      // Inventory give after commit so we don't hold DB locks during framework calls
+      await this.giveCard(req.source, cardJson);
+
       logger.silly('Ordered new card.');
-      return card.toJSON();
+      return cardJson;
     } catch (error: unknown) {
       logger.error(error);
-      t.rollback();
+      await t.rollback();
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error(i18next.t('Failed to create new account'));
     }
   }

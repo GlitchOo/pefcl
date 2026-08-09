@@ -3,7 +3,7 @@ import { Heading2, Heading4, Heading6 } from '@components/ui/Typography/Headings
 import styled from '@emotion/styled';
 import { useConfig } from '@hooks/useConfig';
 import { Alert, Paper, Stack } from '@mui/material';
-import { Account, ATMInput, GetATMAccountInput } from '@typings/Account';
+import { Account, AtmInput, GetAtmAccountInput } from '@typings/Account';
 import { AccountEvents, CardEvents } from '@typings/Events';
 import { defaultWithdrawOptions } from '@utils/constants';
 import { formatMoney } from '@utils/currency';
@@ -19,7 +19,7 @@ import { useKeyDown } from '@hooks/useKeyPress';
 import { CardErrors } from '@typings/Errors';
 import { PIN_CODE_LENGTH } from '@shared/constants';
 import BankCard from '@components/BankCard';
-import { ErrorRounded } from '@mui/icons-material';
+import { AccountBalanceRounded, ErrorRounded } from '@mui/icons-material';
 import PinField from '@components/ui/Fields/PinField';
 import { useExitListener } from '@hooks/useExitListener';
 import { useAtomValue } from 'jotai';
@@ -34,38 +34,123 @@ const AnimationContainer = styled.div`
 
 const Container = styled(Paper)`
   display: inline-block;
-  padding: ${theme.spacing(7)};
-  border-radius: ${theme.spacing(3)};
+  min-width: 22rem;
+  padding: 0;
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+`;
+
+const BrandBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(180deg, rgba(124, 181, 24, 0.12) 0%, transparent 100%),
+    var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, ${theme.palette.primary.main}, transparent 60%);
+  }
+
+  svg {
+    color: ${theme.palette.primary.main};
+    font-size: 1.15rem;
+  }
+`;
+
+const BrandName = styled.span`
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+`;
+
+const BrandStep = styled.span`
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${theme.palette.text.disabled};
+`;
+
+const Body = styled.div`
+  padding: ${theme.spacing(4)} ${theme.spacing(5)} ${theme.spacing(5)};
 `;
 
 const AccountBalance = styled(Heading6)`
-  color: ${theme.palette.text.primary};
-  font-weight: ${theme.typography.fontWeightLight};
+  color: ${theme.palette.text.secondary};
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+`;
+
+const BalanceAmount = styled(Heading2)`
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.25rem;
 `;
 
 const Header = styled(Stack)`
-  margin-bottom: ${theme.spacing(5)};
+  margin-bottom: ${theme.spacing(3.5)};
+`;
+
+const StepTitle = styled(Heading4)`
+  letter-spacing: 0.04em;
 `;
 
 const WithdrawText = styled(Heading6)`
   display: block;
   padding-bottom: ${theme.spacing(1.5)};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: ${theme.palette.text.secondary};
+  font-size: 0.7rem;
 `;
 
 const WithdrawContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 8rem);
-  grid-row-gap: ${theme.spacing(1.5)};
-  grid-column-gap: ${theme.spacing(1.5)};
+  grid-template-columns: repeat(3, 8.5rem);
+  grid-row-gap: ${theme.spacing(1.25)};
+  grid-column-gap: ${theme.spacing(1.25)};
+
+  button {
+    min-height: 3rem;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
 `;
 
 const CardWrapper = styled.div`
-  min-width: 15rem;
+  min-width: 16rem;
+  transition: transform var(--transition-fast);
+
+  :hover {
+    transform: translateY(-2px);
+  }
+`;
+
+const CardsRow = styled(Stack)`
+  max-width: 52rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
 `;
 
 type BankState = 'select-card' | 'enter-pin' | 'withdraw';
 
-const ATM = () => {
+const Atm = () => {
   const { t } = useTranslation();
   const config = useConfig();
   const { isCardsEnabled } = config.frameworkIntegration;
@@ -75,7 +160,7 @@ const ATM = () => {
   const [account, setAccount] = useState<Account>();
   const [isOpen, setIsOpen] = useState(false);
 
-  useNuiEvent('PEFCL', 'setVisibleATM', (data) => setIsOpen(data as boolean));
+  useNuiEvent('pefcl', 'setVisibleATM', (data) => setIsOpen(data as boolean));
   const initialStatus: BankState = isCardsEnabled ? 'select-card' : 'withdraw';
 
   const [selectedCard, setSelectedCard] = useState<InventoryCard>();
@@ -83,21 +168,28 @@ const ATM = () => {
   const [state, setState] = useState<BankState>(initialStatus);
   const [pin, setPin] = useState('');
 
+  useEffect(() => {
+    if (!isOpen) {
+      setError('');
+      setPin('');
+      setAccount(undefined);
+      setSelectedCard(undefined);
+      setState(initialStatus);
+    }
+  }, [isOpen, initialStatus]);
+
   useExitListener(state === 'withdraw' || state === initialStatus);
 
   const withdrawOptions = config?.atms?.withdrawOptions ?? defaultWithdrawOptions;
-
-  const handleClose = () => {
-    setError('');
-    setPin('');
-    setAccount(undefined);
-    setState(initialStatus);
-  };
 
   const handleBack = () => {
     setError('');
     setPin('');
     if (state === 'enter-pin') {
+      setState('select-card');
+    } else if (state === 'withdraw' && isCardsEnabled) {
+      setAccount(undefined);
+      setSelectedCard(undefined);
       setState('select-card');
     }
   };
@@ -131,7 +223,7 @@ const ATM = () => {
 
   const handleUpdateBalance = async () => {
     setError('');
-    const response = await fetchNui<{ account: Account; card: Card }, GetATMAccountInput>(
+    const response = await fetchNui<{ account: Account; card: Card }, GetAtmAccountInput>(
       AccountEvents.GetAtmAccount,
       input,
     );
@@ -153,7 +245,7 @@ const ATM = () => {
 
     const accountId = withdrawAccount.id;
 
-    const payload: ATMInput = isCardsEnabled
+    const payload: AtmInput = isCardsEnabled
       ? {
           amount,
           cardId: selectedCard?.id,
@@ -209,7 +301,7 @@ const ATM = () => {
     if (pin.length === PIN_CODE_LENGTH && selectedCard?.id) {
       try {
         setError('');
-        const response = await fetchNui<{ account: Account; card: Card }, GetATMAccountInput>(
+        const response = await fetchNui<{ account: Account; card: Card }, GetAtmAccountInput>(
           AccountEvents.GetAtmAccount,
           input,
         );
@@ -248,39 +340,53 @@ const ATM = () => {
   };
 
   const accountBalance = isCardsEnabled ? account?.balance ?? 0 : defaultAccount?.balance ?? 0;
+
+  const stepLabel =
+    state === 'select-card' ? t('Select card') : state === 'enter-pin' ? t('Enter PIN') : t('Withdraw');
+
+  const renderShell = (children: React.ReactNode) => (
+    <Container elevation={4}>
+      <BrandBar>
+        <AccountBalanceRounded />
+        <BrandName>Fleeca ATM</BrandName>
+        <BrandStep>{stepLabel}</BrandStep>
+      </BrandBar>
+      <Body>{children}</Body>
+    </Container>
+  );
+
   return (
     <>
       <AnimatePresence>
         {isOpen && state === 'select-card' && (
           <AnimationContainer>
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
             >
-              <Container elevation={4}>
-                <Header>
-                  <Heading4>{t('Select a card')}</Heading4>
-                </Header>
+              {renderShell(
+                <>
+                  <Header>
+                    <StepTitle>{t('Select a card')}</StepTitle>
+                    <Heading6>{t('Choose a debit card to continue')}</Heading6>
+                  </Header>
 
-                <Stack direction="row" spacing={1}>
-                  {cards.map((card) => (
-                    <CardWrapper key={card.number} onClick={() => handleSelectCard(card)}>
-                      <BankCard card={card} />
-                    </CardWrapper>
-                  ))}
-                </Stack>
+                  <CardsRow direction="row" spacing={1.5}>
+                    {cards.map((card) => (
+                      <CardWrapper key={card.number} onClick={() => handleSelectCard(card)}>
+                        <BankCard card={card} />
+                      </CardWrapper>
+                    ))}
+                  </CardsRow>
 
-                {error && (
-                  <Alert
-                    icon={<ErrorRounded />}
-                    color="error"
-                    sx={{ margin: '0.5rem -1.5rem -1.5rem' }}
-                  >
-                    {error}
-                  </Alert>
-                )}
-              </Container>
+                  {error && (
+                    <Alert icon={<ErrorRounded />} color="error" sx={{ marginTop: '1rem' }}>
+                      {error}
+                    </Alert>
+                  )}
+                </>,
+              )}
             </motion.div>
           </AnimationContainer>
         )}
@@ -290,38 +396,36 @@ const ATM = () => {
         {isOpen && state === 'enter-pin' && (
           <AnimationContainer>
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
             >
-              <Container elevation={4}>
-                <Header>
-                  <Heading4>{selectedCard?.number}</Heading4>
-                  <Heading6>{selectedCard?.holder}</Heading6>
-                </Header>
+              {renderShell(
+                <>
+                  <Header>
+                    <StepTitle>{selectedCard?.number}</StepTitle>
+                    <Heading6>{selectedCard?.holder}</Heading6>
+                  </Header>
 
-                <form onSubmit={handleSubmit}>
-                  <Stack spacing={3}>
-                    <PinField
-                      label={t('Enter pin')}
-                      value={pin}
-                      onChange={(event) => setPin(event.target.value)}
-                    />
+                  <form onSubmit={handleSubmit}>
+                    <Stack spacing={3}>
+                      <PinField
+                        label={t('Enter pin')}
+                        value={pin}
+                        onChange={(event) => setPin(event.target.value)}
+                      />
 
-                    <Button type="submit">{t('Enter pin')}</Button>
-                  </Stack>
-                </form>
+                      <Button type="submit">{t('Enter pin')}</Button>
+                    </Stack>
+                  </form>
 
-                {error && (
-                  <Alert
-                    icon={<ErrorRounded />}
-                    color="error"
-                    sx={{ margin: '0.5rem -1.5rem -1.5rem' }}
-                  >
-                    {error}
-                  </Alert>
-                )}
-              </Container>
+                  {error && (
+                    <Alert icon={<ErrorRounded />} color="error" sx={{ marginTop: '1rem' }}>
+                      {error}
+                    </Alert>
+                  )}
+                </>,
+              )}
             </motion.div>
           </AnimationContainer>
         )}
@@ -331,36 +435,48 @@ const ATM = () => {
         {isOpen && state === 'withdraw' && (
           <AnimationContainer>
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
             >
-              <Container elevation={4}>
-                <Header>
-                  <AccountBalance>{t('Account balance')}</AccountBalance>
-                  <Heading2>{formatMoney(accountBalance, config.general)}</Heading2>
-                </Header>
+              {renderShell(
+                <>
+                  <Header>
+                    <AccountBalance>{t('Account balance')}</AccountBalance>
+                    <BalanceAmount>{formatMoney(accountBalance, config.general)}</BalanceAmount>
+                    {isCardsEnabled && (
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={handleBack}
+                        sx={{ alignSelf: 'flex-start', marginTop: 1 }}
+                      >
+                        {t('Change card')}
+                      </Button>
+                    )}
+                  </Header>
 
-                <WithdrawText>{t('Quick withdraw')}</WithdrawText>
-                <WithdrawContainer>
-                  {withdrawOptions.map((value) => (
-                    <Button
-                      key={value}
-                      onClick={() => handleWithdraw(value)}
-                      data-value={value}
-                      disabled={value > accountBalance || isLoading}
-                    >
-                      {formatMoney(value, config.general)}
-                    </Button>
-                  ))}
-                </WithdrawContainer>
+                  <WithdrawText>{t('Quick withdraw')}</WithdrawText>
+                  <WithdrawContainer>
+                    {withdrawOptions.map((value) => (
+                      <Button
+                        key={value}
+                        onClick={() => handleWithdraw(value)}
+                        data-value={value}
+                        disabled={value > accountBalance || isLoading}
+                      >
+                        {formatMoney(value, config.general)}
+                      </Button>
+                    ))}
+                  </WithdrawContainer>
 
-                {error && (
-                  <Alert icon={<ErrorRounded />} color="error" sx={{ marginTop: '1rem' }}>
-                    {error}
-                  </Alert>
-                )}
-              </Container>
+                  {error && (
+                    <Alert icon={<ErrorRounded />} color="error" sx={{ marginTop: '1rem' }}>
+                      {error}
+                    </Alert>
+                  )}
+                </>,
+              )}
             </motion.div>
           </AnimationContainer>
         )}
@@ -369,4 +485,4 @@ const ATM = () => {
   );
 };
 
-export default ATM;
+export default Atm;

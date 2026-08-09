@@ -6,39 +6,53 @@ import { Broadcasts } from '@typings/Events';
 import { updateAccount } from '@utils/account';
 import { useAtom, useSetAtom } from 'jotai';
 import { useNuiEvent } from '@hooks/useNuiEvent';
+import { useRef } from 'react';
 
 export const useBroadcasts = () => {
   const updateInvoices = useSetAtom(invoicesAtom);
   const updateTransactions = useSetAtom(transactionBaseAtom);
   const setRawAccounts = useSetAtom(rawAccountAtom);
-  const [accounts, updateAccounts] = useAtom(accountsAtom);
+  const refetchAccounts = useSetAtom(accountsAtom);
+  const [rawAccounts] = useAtom(rawAccountAtom);
 
-  useNuiEvent('PEFCL', Broadcasts.NewTransaction, () => {
+  // Use ref to avoid stale closure when broadcast fires - ensures we always have latest accounts
+  const rawAccountsRef = useRef(rawAccounts);
+  rawAccountsRef.current = rawAccounts;
+
+  useNuiEvent('pefcl', Broadcasts.NewTransaction, () => {
     updateTransactions();
   });
 
-  useNuiEvent('PEFCL', Broadcasts.NewAccount, (account: Account) => {
-    setRawAccounts([...accounts, account])
+  useNuiEvent('pefcl', Broadcasts.NewAccount, (account: Account) => {
+    const accounts = Array.isArray(rawAccountsRef.current) ? rawAccountsRef.current : [];
+    setRawAccounts([...accounts, account]);
   });
 
-  useNuiEvent('PEFCL', Broadcasts.UpdatedAccount, () => {
-    updateAccounts();
+  useNuiEvent('pefcl', Broadcasts.UpdatedAccount, () => {
+    refetchAccounts(undefined);
   });
 
-  useNuiEvent('PEFCL', Broadcasts.NewAccountBalance, (account: Account) => {
-    setRawAccounts(updateAccount(accounts, account));
+  useNuiEvent('pefcl', Broadcasts.NewAccountBalance, (account: Account) => {
+    const accounts = Array.isArray(rawAccountsRef.current) ? rawAccountsRef.current : [];
+    const updated = updateAccount(accounts, account);
+    // Refetch when we can't merge (empty list or account not found) to ensure UI stays in sync
+    if (updated === accounts) {
+      refetchAccounts(undefined);
+    } else {
+      setRawAccounts(updated);
+    }
   });
 
-  useNuiEvent('PEFCL', Broadcasts.NewInvoice, () => {
+  useNuiEvent('pefcl', Broadcasts.NewInvoice, () => {
     updateInvoices();
   });
 
-  useNuiEvent('PEFCL', Broadcasts.NewSharedUser, () => {
-    updateAccounts();
+  useNuiEvent('pefcl', Broadcasts.NewSharedUser, () => {
+    refetchAccounts(undefined);
   });
 
-  useNuiEvent('PEFCL', Broadcasts.RemovedSharedUser, () => {
-    updateAccounts();
+  useNuiEvent('pefcl', Broadcasts.RemovedSharedUser, () => {
+    refetchAccounts(undefined);
   });
 };
 

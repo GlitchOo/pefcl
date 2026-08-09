@@ -44,10 +44,10 @@ export const transactionBaseAtom = atom<
 );
 
 export const transactionsAtom = atom(async (get) => {
-  const transactions = get(transactionBaseAtom).transactions;
-  return transactions;
+  const base = await get(transactionBaseAtom);
+  return base?.transactions ?? [];
 });
 
-export const transactionsTotalAtom = atom((get) => get(transactionBaseAtom).total);
-export const transactionsLimitAtom = atom((get) => get(transactionBaseAtom).limit);
-export const transactionsOffsetAtom = atom((get) => get(transactionBaseAtom).offset);
+export const transactionsTotalAtom = atom(async (get) => (await get(transactionBaseAtom))?.total ?? 0);
+export const transactionsLimitAtom = atom(async (get) => (await get(transactionBaseAtom))?.limit ?? 10);
+export const transactionsOffsetAtom = atom(async (get) => (await get(transactionBaseAtom))?.offset ?? 0);

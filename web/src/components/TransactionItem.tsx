@@ -1,39 +1,109 @@
 import React from 'react';
 import calendar from 'dayjs/plugin/calendar';
 import dayjs from 'dayjs';
-import { ArrowDropDownRounded, ArrowDropUpRounded, ArrowRightRounded } from '@mui/icons-material';
+import {
+  ArrowDownwardRounded,
+  ArrowForwardRounded,
+  ArrowUpwardRounded,
+} from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { BodyText } from '@ui/Typography/BodyText';
 import theme from '@utils/theme';
 import { useConfig } from '@hooks/useConfig';
 import { Transaction, TransactionType } from '@typings/Transaction';
-import { Stack } from '@mui/material';
-import { Heading6 } from '@ui/Typography/Headings';
 import { formatMoney } from '@utils/currency';
 import { useTranslation } from 'react-i18next';
 
 dayjs.extend(calendar);
 
-const Container = styled.div`
-  padding-bottom: 1rem;
-  border-bottom: 1px solid ${theme.palette.background.light8};
+const Row = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+
+  :hover {
+    background: rgba(255, 255, 255, 0.035);
+    border-color: rgba(124, 181, 24, 0.25);
+  }
 `;
 
-const TransactionDate = styled(Heading6)`
-  font-weight: ${theme.typography.fontWeightLight};
+const IconBubble = styled.div<{ tone: 'in' | 'out' | 'transfer' }>`
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: ${({ tone }) =>
+    tone === 'in'
+      ? 'rgba(61, 207, 122, 0.15)'
+      : tone === 'out'
+        ? 'rgba(232, 92, 74, 0.15)'
+        : 'rgba(124, 181, 24, 0.15)'};
+  color: ${({ tone }) =>
+    tone === 'in'
+      ? theme.palette.success.main
+      : tone === 'out'
+        ? theme.palette.error.main
+        : theme.palette.primary.main};
+
+  svg {
+    font-size: 1.15rem;
+  }
 `;
 
-const AccountName = styled(Heading6)`
+const Main = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+`;
+
+const Message = styled.div<{ isLimitedSpace?: boolean }>`
+  font-size: 0.92rem;
+  font-weight: 600;
   color: ${theme.palette.text.primary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  ${({ isLimitedSpace }) => isLimitedSpace && `max-width: 14rem`};
 `;
 
-const TransactionMessage = styled(BodyText)<{ isLimitedSpace?: boolean }>`
-  font-weight: ${theme.typography.fontWeightBold};
-  white-space: pre;
-  text-overflow: ellipsis;
+const Meta = styled.div`
+  font-size: 0.72rem;
+  color: ${theme.palette.text.disabled};
+  white-space: nowrap;
   overflow: hidden;
-  margin-right: 1rem;
-  ${({ isLimitedSpace }) => isLimitedSpace && `max-width: 12rem`};
+  text-overflow: ellipsis;
+`;
+
+const Side = styled.div`
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-end;
+`;
+
+const Amount = styled.div<{ tone: 'in' | 'out' | 'transfer' }>`
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: ${({ tone }) =>
+    tone === 'in'
+      ? theme.palette.success.main
+      : tone === 'out'
+        ? theme.palette.error.main
+        : theme.palette.primary.light};
+`;
+
+const DateText = styled.div`
+  font-size: 0.7rem;
+  color: ${theme.palette.text.disabled};
 `;
 
 const TransactionItem: React.FC<{ transaction: Transaction; isLimitedSpace?: boolean }> = ({
@@ -47,54 +117,35 @@ const TransactionItem: React.FC<{ transaction: Transaction; isLimitedSpace?: boo
   const createdAtDate = dayjs(createdAt);
   const isOutgoing = type === TransactionType.Outgoing;
   const isIncoming = type === TransactionType.Incoming;
-  const isTransfer = type === TransactionType.Transfer;
+  const tone = isOutgoing ? 'out' : isIncoming ? 'in' : 'transfer';
+
+  const routeLabel = !isLimitedSpace
+    ? [fromAccount?.accountName, toAccount?.accountName].filter(Boolean).join(' → ')
+    : undefined;
 
   return (
-    <Container key={id} {...rest}>
-      <Stack flexDirection="row" justifyContent="space-between">
-        <Stack spacing={1}>
-          <TransactionMessage isLimitedSpace={isLimitedSpace}>{message}</TransactionMessage>
+    <Row key={id} {...rest}>
+      <IconBubble tone={tone}>
+        {isOutgoing && <ArrowDownwardRounded />}
+        {isIncoming && <ArrowUpwardRounded />}
+        {!isOutgoing && !isIncoming && <ArrowForwardRounded />}
+      </IconBubble>
 
-          {!isLimitedSpace && (
-            <Stack direction="row" alignItems="center">
-              {fromAccount && (
-                <Stack>
-                  <TransactionDate>{t('From account')}</TransactionDate>
-                  <AccountName>{fromAccount?.accountName}</AccountName>
-                </Stack>
-              )}
+      <Main>
+        <Message isLimitedSpace={isLimitedSpace}>{message}</Message>
+        <Meta>
+          {routeLabel ? `${routeLabel} · ` : ''}
+          {createdAtDate.fromNow()}
+        </Meta>
+      </Main>
 
-              {fromAccount && toAccount && (
-                <ArrowRightRounded sx={{ margin: '0 1rem' }} color="primary" />
-              )}
-
-              {toAccount && (
-                <Stack>
-                  <TransactionDate>{t('To account')}</TransactionDate>
-                  <AccountName>{toAccount?.accountName}</AccountName>
-                </Stack>
-              )}
-            </Stack>
-          )}
-
-          <TransactionDate>{createdAtDate.fromNow()}</TransactionDate>
-        </Stack>
-
-        <Stack alignItems="flex-end">
-          <Stack direction="row" alignItems="flex-start" spacing={0.5}>
-            {isOutgoing && <ArrowDropDownRounded color="error" />}
-            {isIncoming && <ArrowDropUpRounded color="success" />}
-            {isTransfer && <ArrowRightRounded color="primary" />}
-
-            <BodyText>{formatMoney(amount, config.general)}</BodyText>
-          </Stack>
-
-          {!isLimitedSpace && (
-            <TransactionDate>{createdAtDate.format(t('DATE_FORMAT'))}</TransactionDate>
-          )}
-        </Stack>
-      </Stack>
-    </Container>
+      <Side>
+        <Amount tone={tone}>{formatMoney(amount, config.general)}</Amount>
+        {!isLimitedSpace && (
+          <DateText>{createdAtDate.format(t('DATE_FORMAT'))}</DateText>
+        )}
+      </Side>
+    </Row>
   );
 };
 

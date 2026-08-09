@@ -1,5 +1,5 @@
 import { AccountCard, LoadingAccountCard } from '@components/AccountCard';
-import CreateAccountModal from '@components/Modals/CreateAccount';
+import CreateAccountModal from '@components/modals/CreateAccount';
 import { orderedAccountsAtom } from '@data/accounts';
 import styled from '@emotion/styled';
 import { useConfig } from '@hooks/useConfig';
@@ -9,70 +9,72 @@ import theme from '@utils/theme';
 import { useAtom } from 'jotai';
 import React, { useState } from 'react';
 
-const CardContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-
-  button {
-    margin-top: ${theme.spacing(1)};
-  }
-`;
-
-const Cards = styled.div`
-  position: relative;
-  min-height: 7.5rem;
-  padding: 0;
-  display: flex;
-  overflow-x: auto;
+const Cards = styled.div<{ compact: boolean }>`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(${({ compact }) => (compact ? '200px' : '240px')}, 1fr));
+  gap: 0.85rem;
   width: 100%;
-  padding-bottom: ${theme.spacing(2)};
-
-  & > * {
-    min-width: 17rem;
-    width: calc(25% - ${theme.spacing(1.5)});
-    margin-right: ${theme.spacing(2)};
-
-    &:last-child {
-      margin-right: 0;
-    }
-  }
+  align-items: stretch;
 `;
 
-const CreateCard = styled.div`
+const CardSlot = styled.div<{ compact: boolean }>`
+  min-width: 0;
+  height: ${({ compact }) => (compact ? '8rem' : '9.5rem')};
+`;
+
+const CreateCard = styled.button<{ compact: boolean }>`
+  appearance: none;
+  width: 100%;
+  height: ${({ compact }) => (compact ? '8rem' : '9.5rem')};
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  border-radius: ${theme.spacing(2)};
-  border: 1px dashed ${theme.palette.grey[500]};
-  font-size: 1.5rem;
-  transition: 300ms;
+  gap: 0.35rem;
+  border-radius: var(--card-radius);
+  border: 1px dashed ${theme.palette.text.disabled};
+  color: ${theme.palette.text.secondary};
+  background: rgba(124, 181, 24, 0.06);
 
-  flex: 0;
-  min-width: 5.5rem;
-  width: 5.5rem;
-  height: 5.5rem;
-
-  :hover {
+  :hover:not(:disabled) {
     color: ${theme.palette.primary.main};
-    border: 1px dashed ${theme.palette.primary.main};
+    border-color: ${theme.palette.primary.main};
+    background: var(--accent-muted);
+  }
+
+  :disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 
   svg {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
+  }
+
+  span {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 `;
 
 interface AccountCardsProps {
   selectedAccountId?: number;
   onSelectAccount?: (id: number) => void;
+  compact?: boolean;
 }
 
-const AccountCards = ({ onSelectAccount, selectedAccountId }: AccountCardsProps) => {
+const AccountCards = ({
+  onSelectAccount,
+  selectedAccountId,
+  compact = false,
+}: AccountCardsProps) => {
   const config = useConfig();
   const [orderedAccounts] = useAtom(orderedAccountsAtom);
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const canCreate = orderedAccounts.length < (config.accounts.maximumNumberOfAccounts || 4);
 
   return (
     <>
@@ -86,32 +88,49 @@ const AccountCards = ({ onSelectAccount, selectedAccountId }: AccountCardsProps)
         <CreateAccountModal onClose={() => setIsCreateAccountOpen(false)} />
       </Dialog>
 
-      <Cards>
+      <Cards compact={compact}>
         {orderedAccounts.map((account) => (
-          <CardContainer key={account.id} onClick={() => onSelectAccount?.(account.id)}>
-            <AccountCard account={account} selected={account.id === selectedAccountId} withCopy />
-          </CardContainer>
+          <CardSlot key={account.id} compact={compact} onClick={() => onSelectAccount?.(account.id)}>
+            <AccountCard
+              account={account}
+              selected={account.id === selectedAccountId}
+              withCopy
+              compact={compact}
+            />
+          </CardSlot>
         ))}
 
-        {orderedAccounts.length < (config.accounts.maximumNumberOfAccounts || 4) && (
-          <CreateCard onClick={() => setIsCreateAccountOpen(true)} title="create-account">
-            <Add />
-          </CreateCard>
+        {canCreate && (
+          <CardSlot compact={compact}>
+            <CreateCard type="button" compact={compact} onClick={() => setIsCreateAccountOpen(true)}>
+              <Add />
+              <span>New</span>
+            </CreateCard>
+          </CardSlot>
         )}
       </Cards>
     </>
   );
 };
 
-export const LoadingCards = () => {
+export const LoadingCards = ({ compact = false }: { compact?: boolean }) => {
   return (
-    <Cards>
-      <LoadingAccountCard />
-      <LoadingAccountCard />
-      <LoadingAccountCard />
-      <CreateCard>
-        <Add />
-      </CreateCard>
+    <Cards compact={compact}>
+      <CardSlot compact={compact}>
+        <LoadingAccountCard compact={compact} />
+      </CardSlot>
+      <CardSlot compact={compact}>
+        <LoadingAccountCard compact={compact} />
+      </CardSlot>
+      <CardSlot compact={compact}>
+        <LoadingAccountCard compact={compact} />
+      </CardSlot>
+      <CardSlot compact={compact}>
+        <CreateCard type="button" compact={compact} disabled>
+          <Add />
+          <span>New</span>
+        </CreateCard>
+      </CardSlot>
     </Cards>
   );
 };

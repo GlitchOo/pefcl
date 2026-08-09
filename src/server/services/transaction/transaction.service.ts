@@ -23,6 +23,8 @@ import { MS_ONE_WEEK } from '@utils/constants';
 import { TransactionEvents } from '@typings/Events';
 import { SharedAccountDB } from '../accountShared/sharedAccount.db';
 import { Transaction as SequelizeTransaction } from 'sequelize/types';
+import { logTransactionCreated, BalanceSnapshot } from '@server/utils/oxLogger';
+import { assertPositiveMoney } from '@server/utils/money';
 
 const logger = mainLogger.child({ module: 'transactionService' });
 
@@ -62,13 +64,20 @@ export class TransactionService {
       (account) => account.getDataValue('accountId') ?? 0,
     );
     const accountIds = accounts.map((account) => account.getDataValue('id') ?? 0);
+    const allAccountIds = [...sharedAccountIds, ...accountIds];
+
+    // When accountId is specified, filter to that account only (must be one the user has access to)
+    const effectiveAccountIds =
+      req.data.accountId && allAccountIds.includes(req.data.accountId)
+        ? [req.data.accountId]
+        : allAccountIds;
 
     const transactions = await this._transactionDB.getTransactionFromAccounts({
       ...req.data,
-      accountIds: [...sharedAccountIds, ...accountIds],
+      accountIds: effectiveAccountIds,
     });
 
-    const total = await this._transactionDB.getTotalTransactionsFromAccounts(accountIds);
+    const total = await this._transactionDB.getTotalTransactionsFromAccounts(effectiveAccountIds);
 
     logger.silly('Returned total of ' + total + ' transactions.');
 
@@ -97,10 +106,7 @@ export class TransactionService {
     const user = this._userService.getUser(req.source);
     const identifier = user.getIdentifier();
     const { fromAccountId, toAccountId, amount, message } = req.data;
-
-    if (amount <= 0) {
-      throw new ServerError(GenericErrors.BadInput);
-    }
+    const transferAmount = assertPositiveMoney(amount);
 
     const t = await sequelize.transaction();
     try {
@@ -123,20 +129,26 @@ export class TransactionService {
         throw new ServerError(GenericErrors.NotFound);
       }
 
-      if (fromAccount.getDataValue('balance') < amount) {
+      if (fromAccount.getDataValue('balance') < transferAmount) {
         throw new ServerError(BalanceErrors.InsufficentFunds);
       }
 
-      await this._accountDB.transfer({ amount, fromAccount, toAccount, transaction: t });
+      await this._accountDB.transfer({
+        amount: transferAmount,
+        fromAccount,
+        toAccount,
+        transaction: t,
+      });
       await this.handleCreateTransaction(
         {
-          amount: amount,
+          amount: transferAmount,
           message: message,
           toAccount: toAccount.toJSON(),
           type: TransactionType.Transfer,
           fromAccount: fromAccount.toJSON(),
         },
         t,
+        req.source,
       );
 
       t.commit();
@@ -149,18 +161,30 @@ export class TransactionService {
   }
 
   private async handleExternalTransfer(req: Request<CreateTransferInput>) {
-    const amount = req.data.amount;
+    const amount = assertPositiveMoney(req.data.amount);
 
-    if (amount <= 0) {
-      throw new ServerError(GenericErrors.BadInput);
-    }
+    const user = this._userService.getUser(req.source);
+    const identifier = user.getIdentifier();
 
     const t = await sequelize.transaction();
     try {
-      const fromAccount = await this._accountDB.getAccountById(req.data.fromAccountId, t);
+      const myAccount = await this._accountDB.getAuthorizedAccountById(
+        req.data.fromAccountId,
+        identifier,
+        t,
+      );
+      const sharedAccount = await this._sharedAccountDB.getAuthorizedSharedAccountById(
+        req.data.fromAccountId,
+        identifier,
+        [AccountRole.Admin],
+        t,
+      );
+
+      const fromAccount = myAccount ?? sharedAccount;
       const toAccount = await this._externalAccountService.getAccountFromExternalAccount(
         req.data.toAccountId,
         t,
+        identifier,
       );
 
       if (!toAccount || !fromAccount) {
@@ -180,18 +204,18 @@ export class TransactionService {
       */
 
       const data = {
-        amount: req.data.amount,
+        amount,
         message: req.data.message,
         toAccount: toAccount.toJSON(),
         fromAccount: fromAccount.toJSON(),
       };
-      await this.handleCreateTransaction({ ...data, type: TransactionType.Outgoing }, t);
-      await this.handleCreateTransaction({ ...data, type: TransactionType.Incoming }, t);
+      await this.handleCreateTransaction({ ...data, type: TransactionType.Outgoing }, t, req.source);
+      await this.handleCreateTransaction({ ...data, type: TransactionType.Incoming }, t, req.source);
 
       t.commit();
     } catch (e) {
       t.rollback();
-      logger.silly('Failed to create internal transfer');
+      logger.silly('Failed to create external transfer');
       logger.silly(e);
       throw e;
     }
@@ -213,6 +237,8 @@ export class TransactionService {
   async handleCreateTransaction(
     input: TransactionInput,
     sequelizeTransaction: SequelizeTransaction,
+    source?: number,
+    balances?: BalanceSnapshot,
   ): Promise<TransactionModel | null> {
     logger.silly(`Created transaction.`);
     logger.silly(input);
@@ -222,6 +248,7 @@ export class TransactionService {
     sequelizeTransaction.afterCommit(() => {
       logger.silly(`Emitting ${TransactionEvents.NewTransaction}`);
       emit(TransactionEvents.NewTransaction, { ...input, ...transaction.toJSON() });
+      logTransactionCreated(source, input, balances);
     });
 
     return transaction;

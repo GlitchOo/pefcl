@@ -3,23 +3,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const port = process.env.PORT ?? 3004;
 
-const ModuleFederationPlugin = require('webpack/lib/container/ModuleFederationPlugin');
-const deps = require('./package.json').dependencies;
-
-/* TODO: Fix for real */
-/* Probably bad way of fixing this */
-delete deps['@emotion/react'];
-delete deps['@emotion/styled'];
-delete deps['@mui/material'];
-delete deps['@mui/icons-material'];
-delete deps['@mui/styles'];
-
-module.exports = (env, options) => ({
+module.exports = () => ({
   entry: {
     main: './src/bootstrapApp.ts',
   },
   mode: 'development',
-  // devtool: 'none',
   output: {
     publicPath: 'auto',
     filename: '[name].js',
@@ -43,13 +31,6 @@ module.exports = (env, options) => ({
           options: {
             transpileOnly: true,
           },
-        },
-      },
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
         },
       },
       {

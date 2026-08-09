@@ -8,11 +8,24 @@ import { CashModel } from './cash.model';
 import { Request } from '@typings/http';
 import { ServerError } from '@utils/errors';
 import { BalanceEvents } from '@typings/Events';
-import { BalanceErrors, GenericErrors } from '@typings/Errors';
-import { getFrameworkExports } from '@server/utils/frameworkIntegration';
+import { AuthorizationErrors, BalanceErrors, GenericErrors } from '@typings/Errors';
+import { getFrameworkExports, isFrameworkIntegrationActive } from '@server/utils/frameworkIntegration';
+import { assertPositiveMoney } from '@server/utils/money';
 
 const logger = mainLogger.child({ module: 'cash' });
-const useFrameworkIntegration = config?.frameworkIntegration?.enabled;
+const useFrameworkIntegration = isFrameworkIntegrationActive();
+const maxPlayerDistance = config?.frameworkIntegration?.maxPlayerDistance ?? 5.0;
+
+const getDistanceBetweenSources = (a: number, b: number): number => {
+  const pedA = GetPlayerPed(a as unknown as string);
+  const pedB = GetPlayerPed(b as unknown as string);
+  const [x1, y1, z1] = GetEntityCoords(pedA, false);
+  const [x2, y2, z2] = GetEntityCoords(pedB, false);
+  const dx = x1 - x2;
+  const dy = y1 - y2;
+  const dz = z1 - z2;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+};
 
 @singleton()
 export class CashService {
@@ -50,19 +63,32 @@ export class CashService {
   async giveCash(req: Request<ChangeCashInput>) {
     logger.debug(`source ${req.source}: Giving ${req.data.amount} to ${req.data.source}.`);
 
-    const { amount } = req.data;
-    const myCashAmount = await this.getMyCash(req.source);
+    const amount = assertPositiveMoney(req.data.amount);
+    const targetSource = req.data.source;
 
-    if (amount <= 0) {
+    if (!targetSource || targetSource === req.source) {
       throw new ServerError(GenericErrors.BadInput);
     }
+
+    const distance = getDistanceBetweenSources(req.source, targetSource);
+    if (distance > maxPlayerDistance) {
+      throw new ServerError(AuthorizationErrors.Forbidden);
+    }
+
+    const myCashAmount = await this.getMyCash(req.source);
 
     if (myCashAmount < amount) {
       throw new ServerError(BalanceErrors.InsufficentFunds);
     }
 
-    await this.handleAddCash(req.data.source, amount);
+    // Remove first to avoid duplication if add succeeds and remove fails
     await this.handleRemoveCash(req.source, amount);
+    try {
+      await this.handleAddCash(targetSource, amount);
+    } catch (err) {
+      await this.handleAddCash(req.source, amount);
+      throw err;
+    }
 
     return true;
   }
@@ -74,18 +100,24 @@ export class CashService {
 
     if (useFrameworkIntegration) {
       const exports = getFrameworkExports();
-      exports.removeCash(source, amount);
+      const ok = exports.removeCash(source, amount);
+      if (ok === false) {
+        throw new ServerError(BalanceErrors.InsufficentFunds);
+      }
       return null;
     }
 
     const cash = await this._cashDB.getCashByIdentifier(identifier);
     if (!cash) {
-      throw new Error(GenericErrors.NotFound);
+      throw new ServerError(GenericErrors.NotFound);
     }
-    await this._cashDB.decrement(cash, amount);
-
-    emitNet(BalanceEvents.UpdateCashBalance, source, cash?.getDataValue('amount'));
-    return null;
+    const current = cash.getDataValue('amount') ?? 0;
+    if (current < amount) {
+      throw new ServerError(BalanceErrors.InsufficentFunds);
+    }
+    await cash.update({ amount: current - amount });
+    emitNet(BalanceEvents.UpdateCashBalance, source, current - amount);
+    return cash;
   }
 
   async handleAddCash(source: number, amount: number): Promise<CashModel | null> {
@@ -101,11 +133,11 @@ export class CashService {
 
     const cash = await this._cashDB.getCashByIdentifier(identifier);
     if (!cash) {
-      throw new Error(GenericErrors.NotFound);
+      throw new ServerError(GenericErrors.NotFound);
     }
-    await this._cashDB.increment(cash, amount);
-
-    emitNet(BalanceEvents.UpdateCashBalance, source, cash?.getDataValue('amount'));
+    const current = cash.getDataValue('amount') ?? 0;
+    await cash.update({ amount: current + amount });
+    emitNet(BalanceEvents.UpdateCashBalance, source, current + amount);
     return cash;
   }
 }

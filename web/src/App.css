@@ -2,6 +2,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-family: var(--font-ui);
 }
 
 .nui-wrapper {
@@ -14,23 +15,28 @@ body {
 
 pre {
   counter-reset: line-numbering;
-  background: #2c3e50;
+  background: var(--bg-card);
   padding: 12px 0px 14px 0;
-  color: #ecf0f1;
+  color: var(--text-primary);
   line-height: 140%;
 }
 
 ::-webkit-scrollbar {
-  width: 0.25rem;
-  height: 0.25rem;
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #222;
-  border-radius: 2rem;
+  background: var(--scrollbar-track);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  border-radius: 2rem;
-  background-color: #80cae24a;
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  min-height: 40px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }

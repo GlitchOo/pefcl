@@ -50,7 +50,7 @@ const load = async () => {
   });
 };
 
-load();
+load().catch(() => {});
 
 export type TranslateFunction = typeof i18n['t'];
 

@@ -27,6 +27,7 @@ import './utils/server-config';
 import { mainLogger } from './sv_logger';
 import { mockedResourceName } from './globals.server';
 import { config } from './utils/server-config';
+import { isFrameworkIntegrationActive } from './utils/frameworkIntegration';
 import { UserService } from './services/user/user.service';
 import { container } from 'tsyringe';
 import { CardService } from './services/card/card.service';
@@ -114,7 +115,7 @@ if (isMocking) {
     global.source = 2;
 
     /* Load user with framework Integration */
-    if (config.frameworkIntegration?.enabled) {
+    if (isFrameworkIntegrationActive()) {
       global.source = 3;
       const userService = container.resolve(UserService);
       const player1 = {

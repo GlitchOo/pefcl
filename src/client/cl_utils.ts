@@ -1,6 +1,6 @@
 import { ClientUtils } from '@project-error/pe-utils';
 
-export const ClUtils = new ClientUtils({ promiseTimout: 200 });
+export const ClUtils = new ClientUtils({ promiseTimeout: 30000 });
 
 /**
  *  Will Register an NUI event listener that will immediately

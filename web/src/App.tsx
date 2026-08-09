@@ -17,16 +17,16 @@ import { Routes, Route } from 'react-router';
 import './App.css';
 import { useConfig } from './hooks/useConfig';
 import theme from './utils/theme';
-import ATM from './views/ATM/ATM';
-import Deposit from './views/Deposit/Deposit';
-import Invoices from './views/Invoices/Invoices';
-import Withdraw from './views/Withdraw/Withdraw';
+import Atm from './views/atm/Atm';
+import Deposit from './views/deposit/Deposit';
+import Invoices from './views/invoices/Invoices';
+import Withdraw from './views/withdraw/Withdraw';
 import Accounts from './views/accounts/Accounts';
 import Dashboard from './views/dashboard/Dashboard';
 import Transactions from './views/transactions/Transactions';
 import Transfer from './views/transfer/Transfer';
-import CardsView from './views/Cards/CardsView';
-import MobileApp from './views/Mobile/Mobile';
+import CardsView from './views/cards/CardsView';
+import MobileApp from './views/mobile/Mobile';
 import { useGlobalSettings } from '@hooks/useGlobalSettings';
 import { useLBPhoneSettings } from '@hooks/useLBPhoneSettings';
 import { useLBTabletSettings } from '@hooks/useLBTabletSettings';
@@ -34,7 +34,7 @@ import { useLBTabletSettings } from '@hooks/useLBTabletSettings';
 dayjs.extend(updateLocale);
 
 const Container = styled.div`
-  padding: 4rem;
+  padding: 3.5rem;
   height: 100%;
   display: flex;
   align-items: center;
@@ -44,12 +44,23 @@ const Container = styled.div`
 const Content = styled.div`
   display: flex;
   flex-direction: column;
-  width: 1400px;
-  height: 800px;
+  width: 1440px;
+  height: 820px;
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: 16px;
   color: ${theme.palette.text.primary};
-  background: ${theme.palette.background.default};
+  background:
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(124, 181, 24, 0.12), transparent 55%),
+    ${theme.palette.background.default};
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+`;
+
+const ShellBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 `;
 
 const App: React.FC = () => {
@@ -65,8 +76,8 @@ const App: React.FC = () => {
 
   const [hasLoaded, setHasLoaded] = useState(process.env.NODE_ENV === 'development' || isMobile);
 
-  useNuiEvent('PEFCL', UserEvents.Loaded, () => setHasLoaded(true));
-  useNuiEvent('PEFCL', UserEvents.Unloaded, () => {
+  useNuiEvent('pefcl', UserEvents.Loaded, () => setHasLoaded(true));
+  useNuiEvent('pefcl', UserEvents.Unloaded, () => {
     setHasLoaded(false);
     setAccounts([]);
     setRawAccounts([]);
@@ -82,8 +93,15 @@ const App: React.FC = () => {
     };
   }, []);
 
-  useNuiEvent('PEFCL', 'setVisible', (data) => setIsVisible(data as boolean));
-  useNuiEvent('PEFCL', 'setVisibleATM', (data) => setIsAtmVisible(data as boolean));
+  useNuiEvent('pefcl', 'setVisible', (data) => setIsVisible(data as boolean));
+  useNuiEvent('pefcl', 'setVisibleATM', (data) => setIsAtmVisible(data as boolean));
+
+  useEffect(() => {
+    if (hasLoaded && (isVisible || isAtmVisible)) {
+      setAccounts(undefined);
+      setTransactions(undefined);
+    }
+  }, [hasLoaded, isVisible, isAtmVisible, setAccounts, setTransactions]);
 
   const { i18n } = useTranslation();
   useExitListener(isVisible);
@@ -114,23 +132,25 @@ const App: React.FC = () => {
         {!isAtmVisible && isVisible && (
           <Container>
             <Content>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="accounts" element={<Accounts />} />
-                <Route path="transactions" element={<Transactions />} />
-                <Route path="invoices" element={<Invoices />} />
-                <Route path="transfer" element={<Transfer />} />
-                <Route path="deposit" element={<Deposit />} />
-                <Route path="withdraw" element={<Withdraw />} />
-                <Route path="cards" element={<CardsView />} />
-              </Routes>
+              <ShellBody>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="accounts" element={<Accounts />} />
+                  <Route path="transactions" element={<Transactions />} />
+                  <Route path="invoices" element={<Invoices />} />
+                  <Route path="transfer" element={<Transfer />} />
+                  <Route path="deposit" element={<Deposit />} />
+                  <Route path="withdraw" element={<Withdraw />} />
+                  <Route path="cards" element={<CardsView />} />
+                </Routes>
+              </ShellBody>
             </Content>
           </Container>
         )}
       </React.Suspense>
 
       <React.Suspense fallback={null}>
-        <ATM />
+        <Atm />
       </React.Suspense>
 
       {isMobile && (
@@ -141,7 +161,6 @@ const App: React.FC = () => {
         </React.Suspense>
       )}
 
-      {/* No fallback needed for BroadcastsWrapper as it renders nothing visible */}
       <React.Suspense fallback={null}>
         <BroadcastsWrapper />
       </React.Suspense>

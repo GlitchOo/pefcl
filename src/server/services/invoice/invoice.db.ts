@@ -32,7 +32,11 @@ export class InvoiceDB {
   }
 
   async getInvoiceById(id: number, transaction: Transaction): Promise<InvoiceModel | null> {
-    return await InvoiceModel.findOne({ where: { id }, transaction });
+    return await InvoiceModel.findOne({
+      where: { id },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
   }
 
   async createInvoice(input: CreateInvoiceInput): Promise<InvoiceModel> {
@@ -43,11 +47,14 @@ export class InvoiceDB {
     return await InvoiceModel.create({ ...input, expiresAt });
   }
 
-  async payInvoice(invoiceId: number): Promise<number> {
+  async payInvoice(invoiceId: number, transaction?: Transaction): Promise<boolean> {
     const [result] = await InvoiceModel.update(
       { status: InvoiceStatus.PAID },
-      { where: { id: invoiceId } },
+      {
+        where: { id: invoiceId, status: InvoiceStatus.PENDING },
+        transaction,
+      },
     );
-    return result;
+    return result > 0;
   }
 }

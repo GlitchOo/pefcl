@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Account, AccountRole, AccountType, ExternalAccount } from '@typings/Account';
 import { ResourceConfig } from '../../../typings/config';
 import { useConfig } from '../hooks/useConfig';
+import { useGlobalSettings } from '../hooks/useGlobalSettings';
 import { formatMoney } from '../utils/currency';
 import theme from '../utils/theme';
 import { BodyText } from './ui/Typography/BodyText';
@@ -12,7 +13,7 @@ import { Heading6 } from './ui/Typography/Headings';
 import Select from './ui/Select';
 import Button from './ui/Button';
 import { Box } from '@mui/system';
-import AddExternalAccountModal from './Modals/AddExternalAccount';
+import AddExternalAccountModal from './modals/AddExternalAccount';
 
 const BalanceText = styled(Heading6)`
   color: ${theme.palette.primary.main};
@@ -84,6 +85,7 @@ const AccountSelect = ({
   externalAccounts = [],
 }: AccountSelectProps) => {
   const { t } = useTranslation();
+  const { isMobile } = useGlobalSettings();
   const config = useConfig();
   const [isOpen, setIsOpen] = useState(false);
   const [isExternalOpen, setIsExternalOpen] = useState(false);
@@ -124,10 +126,14 @@ const AccountSelect = ({
         variant="filled"
         sx={{ width: '100%' }}
         MenuProps={{
+          disablePortal: isMobile,
           sx: {
+            zIndex: 1500,
             maxHeight: '25rem',
-            scrollbarColor: '#222',
-            scrollbarWidth: '2px',
+            '& .MuiPaper-root': {
+              background: 'rgba(12, 14, 18, 0.98)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+            },
           },
         }}
       >

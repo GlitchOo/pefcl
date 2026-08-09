@@ -8,8 +8,8 @@ const Transactions = () => {
   const [transactions] = useAtom(transactionsAtom);
 
   return (
-    <Stack spacing={2}>
-      {transactions.slice(0, 3).map((transaction) => (
+    <Stack spacing={1.5}>
+      {transactions.slice(0, 4).map((transaction) => (
         <TransactionItem key={transaction.id} transaction={transaction} isLimitedSpace />
       ))}
     </Stack>

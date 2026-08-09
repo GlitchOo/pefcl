@@ -20,12 +20,21 @@ export const fetchNui = async <T = object, I = object>(
     body: JSON.stringify(data),
   };
 
-  const res = await fetch(url, options);
-  const response: ServerPromiseResp<T> = await res.json();
+  try {
+    const res = await fetch(url, options);
+    const response: ServerPromiseResp<T> = await res.json();
 
-  if (response.status === 'error') {
-    throw new Error(response.errorMsg);
+    if (response.status === 'error') {
+      throw new Error(response.errorMsg);
+    }
+
+    return response.data;
+  } catch (error) {
+    // NUI frame can race resource boot / phone iframe loads; avoid uncaught Failed to fetch spam
+    if (error instanceof TypeError) {
+      return undefined;
+    }
+
+    throw error;
   }
-
-  return response.data;
 };

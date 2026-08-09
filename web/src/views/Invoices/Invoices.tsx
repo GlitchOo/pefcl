@@ -1,8 +1,9 @@
 import InvoiceItem from '@components/InvoiceItem';
 import Layout from '@components/Layout';
+import BankPanel from '@components/ui/BankPanel';
 import React, { useEffect, useState } from 'react';
-import { Heading3, Heading6 } from '@components/ui/Typography/Headings';
-import { Pagination, Stack, Typography } from '@mui/material';
+import { Heading3 } from '@components/ui/Typography/Headings';
+import { Pagination, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import theme from '@utils/theme';
 import styled from '@emotion/styled';
@@ -11,17 +12,45 @@ import { InvoiceEvents } from '@typings/Events';
 import { fetchNui } from '@utils/fetchNui';
 import { DEFAULT_PAGINATION_LIMIT } from '@utils/constants';
 
-const NoInvoicesText = styled(Heading3)`
-  padding-top: 4rem;
-  text-align: center;
-  color: ${theme.palette.text.secondary};
+const Page = styled.div`
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 `;
 
-const InvoicesContainer = styled(Stack)`
+const Panel = styled(BankPanel)`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
+const NoInvoicesText = styled(Heading3)`
+  padding: 3rem 1rem;
+  text-align: center;
+  color: ${theme.palette.text.secondary};
+  font-weight: 500;
+`;
+
+const List = styled.div`
   overflow: auto;
-  max-height: calc(100% - 4.5rem);
-  height: 100%;
-  padding-right: 1rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-right: 0.35rem;
+`;
+
+const Footer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  margin-top: auto;
+  border-top: 1px solid var(--border-color);
 `;
 
 const Invoices = () => {
@@ -35,7 +64,7 @@ const Invoices = () => {
   const offset = limit * (page - 1);
   const to = offset + limit > total ? total : offset + limit;
 
-  const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handleChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
@@ -55,36 +84,31 @@ const Invoices = () => {
   }, [limit, offset]);
 
   return (
-    <Layout title={t('Invoices')}>
-      <Stack paddingBottom="1rem">
-        <Heading6>{t('Pay your bills')}</Heading6>
-      </Stack>
+    <Layout title={t('Invoices')} subtitle={t('Pay your bills')}>
+      <Page>
+        <Panel>
+          <List>
+            {invoices.map((invoice) => (
+              <InvoiceItem key={invoice.id} invoice={invoice} />
+            ))}
 
-      <InvoicesContainer spacing={2.5}>
-        {invoices.map((invoice) => (
-          <InvoiceItem key={invoice.id} invoice={invoice} />
-        ))}
+            {invoices.length === 0 && <NoInvoicesText>{t('No invoices, yet.')}</NoInvoicesText>}
+          </List>
 
-        {invoices.length === 0 && <NoInvoicesText>{t('No invoices, yet.')}</NoInvoicesText>}
-
-        <Stack
-          pt={2}
-          sx={{ marginTop: 'auto !important', alignSelf: 'flex-end' }}
-          direction="row"
-          alignItems="center"
-        >
-          <Typography variant="caption">
-            {t('{{from}}-{{to}} of {{total}}', { from: offset, to, total })}
-          </Typography>
-          <Pagination
-            count={pages}
-            shape="rounded"
-            onChange={handleChange}
-            page={page}
-            color="primary"
-          />
-        </Stack>
-      </InvoicesContainer>
+          <Footer>
+            <Typography variant="caption" color="text.secondary">
+              {t('{{from}}-{{to}} of {{total}}', { from: offset || (total ? 1 : 0), to, total })}
+            </Typography>
+            <Pagination
+              count={pages}
+              shape="rounded"
+              onChange={handleChange}
+              page={page}
+              color="primary"
+            />
+          </Footer>
+        </Panel>
+      </Page>
     </Layout>
   );
 };

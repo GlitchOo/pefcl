@@ -95,10 +95,15 @@ export class AccountDB {
   }
 
   async decrement(account: AccountModel, amount: number, transaction?: Transaction) {
-    await account?.update({ balance: account.getDataValue('balance') - amount }, { transaction });
+    const previous = account?.getDataValue('balance') ?? 0;
+    await account?.decrement('balance', { by: amount, transaction });
+    // Force in-memory balance so ox logs get correct before/after (Sequelize may not refresh)
+    account?.setDataValue('balance', previous - amount);
   }
 
   async increment(account: AccountModel, amount: number, transaction?: Transaction) {
-    await account?.update({ balance: account.getDataValue('balance') + amount }, { transaction });
+    const previous = account?.getDataValue('balance') ?? 0;
+    await account?.increment('balance', { by: amount, transaction });
+    account?.setDataValue('balance', previous + amount);
   }
 }

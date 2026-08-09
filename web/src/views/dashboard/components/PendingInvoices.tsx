@@ -8,8 +8,8 @@ const PendingInvoices: React.FC = () => {
   const [invoices] = useAtom(unpaidInvoicesAtom);
 
   return (
-    <Stack spacing={2}>
-      {invoices.map((invoice) => (
+    <Stack spacing={1.5}>
+      {invoices.slice(0, 4).map((invoice) => (
         <InvoiceItem key={invoice.id} invoice={invoice} />
       ))}
     </Stack>

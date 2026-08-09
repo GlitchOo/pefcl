@@ -3,7 +3,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Account, AccountType } from '@typings/Account';
 import { useConfig } from '../hooks/useConfig';
-import { MasterCardIcon } from '../icons/MasterCardIcon';
 import { formatMoney } from '../utils/currency';
 import theme from '../utils/theme';
 import { BodyText } from './ui/Typography/BodyText';
@@ -16,73 +15,139 @@ interface ContainerProps {
   isDisabled: boolean;
   accountType: AccountType;
   selected: boolean;
+  compact: boolean;
 }
+
 const Container = styled.div<ContainerProps>`
   user-select: none;
+  position: relative;
   width: 100%;
-  padding: 1rem;
-  background: ${({ accountType }) =>
-    accountType === AccountType.Personal
-      ? 'linear-gradient(90deg, #264f82 0%, #1d3757 100%)'
-      : 'linear-gradient(90deg, rgb(45, 58, 75) 0%, #263140 100%)'};
-
-  border-radius: 1rem;
-  display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
-  grid-row-gap: 0.5rem;
-
+  height: 100%;
+  padding: ${({ compact }) => (compact ? '0.85rem 1rem 1rem' : '1.15rem 1.25rem')};
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ compact }) => (compact ? '0.35rem' : '0.65rem')};
   cursor: pointer;
-  transition: 250ms;
-  box-shadow: ${theme.shadows[4]};
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 2px solid transparent;
+  background: ${({ accountType }) =>
+    accountType === AccountType.Personal ? 'var(--card-personal)' : 'var(--card-shared)'};
 
-  :hover {
-    box-shadow: ${theme.shadows[6]};
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      125deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 40%,
+      transparent 100%
+    );
+    pointer-events: none;
   }
 
-  transition: 200ms ease-in-out;
-  border: 2px solid transparent;
+  :hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
 
   ${({ selected }) =>
     selected &&
     `
-    border: 2px solid ${theme.palette.primary.light};
+    border-color: ${theme.palette.primary.main};
+    box-shadow: 0 0 0 1px ${theme.palette.primary.main}, 0 6px 18px rgba(124, 181, 24, 0.22);
   `};
 
   ${({ isDisabled }) =>
     isDisabled &&
     `
     opacity: 0.5;
+    pointer-events: none;
   `}
 `;
 
 const Row = styled.div`
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
 `;
 
-const RowEnd = styled(Row)`
-  align-items: flex-end;
+const Balance = styled(Heading3)<{ compact?: boolean }>`
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-shadow: var(--text-shadow);
+  font-size: ${({ compact }) => (compact ? '1.35rem' : '1.75rem')};
+  line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const Col = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-`;
-
-const Type = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-`;
-
-const StyledIcon = styled(MasterCardIcon)`
-  color: rgba(255, 255, 255, 0.54);
-`;
-
-const DefaultText = styled(Heading6)`
+const TypeBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: ${theme.typography.fontWeightLight};
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+`;
+
+const DefaultBadge = styled(TypeBadge)`
+  background: rgba(124, 181, 24, 0.35);
+  border-color: rgba(124, 181, 24, 0.55);
+  color: #fff;
+`;
+
+const AccountNumber = styled(Heading5)<{ compact?: boolean }>`
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+  font-size: ${({ compact }) => (compact ? '0.9rem' : '1.1rem')};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const Label = styled(Heading6)`
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(240, 242, 245, 0.55);
+  font-weight: 500;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  margin: 0;
+`;
+
+const Name = styled(BodyText)`
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+  margin: 0;
+`;
+
+const Footer = styled.div<{ compact: boolean }>`
+  margin-top: auto;
+  padding-top: ${({ compact }) => (compact ? '0.2rem' : '0')};
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 `;
 
 type AccountCardProps = {
@@ -90,6 +155,7 @@ type AccountCardProps = {
   selected?: boolean;
   withCopy?: boolean;
   isDisabled?: boolean;
+  compact?: boolean;
 };
 
 export const AccountCard = ({
@@ -97,6 +163,7 @@ export const AccountCard = ({
   selected = false,
   withCopy = false,
   isDisabled = false,
+  compact = false,
   ...props
 }: AccountCardProps) => {
   const { type, id, balance, isDefault, accountName, number } = account;
@@ -104,72 +171,78 @@ export const AccountCard = ({
   const config = useConfig();
 
   return (
-    <Container {...props} key={id} accountType={type} selected={selected} isDisabled={isDisabled}>
+    <Container
+      {...props}
+      key={id}
+      accountType={type}
+      selected={selected}
+      isDisabled={isDisabled}
+      compact={compact}
+    >
       <Row>
-        <Heading3>{formatMoney(balance, config.general)}</Heading3>
-        <Type>
-          <Heading6>{type === AccountType.Shared ? t('SHARED') : t('PERSONAL')}</Heading6>
-          {isDefault && <DefaultText>{t('Default')}</DefaultText>}
-        </Type>
+        <Balance compact={compact}>{formatMoney(balance, config.general)}</Balance>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {isDefault && <DefaultBadge>{t('Default')}</DefaultBadge>}
+          <TypeBadge>{type === AccountType.Shared ? t('SHARED') : t('PERSONAL')}</TypeBadge>
+        </Stack>
       </Row>
 
-      <Stack direction="row" alignItems="center">
-        <Heading5>{number}</Heading5>
+      <Stack direction="row" alignItems="center" sx={{ position: 'relative', zIndex: 1, minWidth: 0 }}>
+        <AccountNumber compact={compact}>{number}</AccountNumber>
         {withCopy && (
           <IconButton
-            onClick={() => copy(number)}
+            onClick={(e) => {
+              e.stopPropagation();
+              copy(number);
+            }}
             size="small"
             color="inherit"
-            style={{ opacity: '0.45', marginTop: 0, marginLeft: '0.25rem' }}
+            style={{ opacity: '0.55', marginLeft: '0.15rem', flexShrink: 0 }}
           >
             <ContentCopyRounded color="inherit" fontSize="small" />
           </IconButton>
         )}
       </Stack>
 
-      <RowEnd>
-        <Col>
-          <Heading6>{t('Account name')}</Heading6>
-          <BodyText>{accountName}</BodyText>
-        </Col>
-      </RowEnd>
+      <Footer compact={compact}>
+        {!compact && <Label>{t('Account name')}</Label>}
+        <Name>{accountName}</Name>
+      </Footer>
     </Container>
   );
 };
 
-export const LoadingAccountCard = () => {
+export const LoadingAccountCard = ({ compact = false }: { compact?: boolean }) => {
   return (
-    <Container accountType={AccountType.Personal} selected={false} isDisabled={false}>
+    <Container
+      accountType={AccountType.Personal}
+      selected={false}
+      isDisabled={false}
+      compact={compact}
+    >
       <Row>
-        <Heading3>
+        <Balance compact={compact}>
           <Skeleton variant="text" width={120} />
-        </Heading3>
-        <Type>
-          <Heading6>
-            <Skeleton variant="text" width={70} />
-          </Heading6>
-          <DefaultText>
-            <Skeleton variant="text" width={40} />
-          </DefaultText>
-        </Type>
+        </Balance>
+        <TypeBadge>
+          <Skeleton variant="text" width={50} />
+        </TypeBadge>
       </Row>
 
-      <Heading5>
+      <AccountNumber compact={compact}>
         <Skeleton variant="text" width="65%" />
-      </Heading5>
+      </AccountNumber>
 
-      <RowEnd>
-        <Col>
-          <Heading6>
+      <Footer compact={compact}>
+        {!compact && (
+          <Label>
             <Skeleton variant="text" width={80} />
-          </Heading6>
-          <BodyText>
-            <Skeleton variant="text" width={60} />
-          </BodyText>
-        </Col>
-
-        <StyledIcon />
-      </RowEnd>
+          </Label>
+        )}
+        <Name>
+          <Skeleton variant="text" width={60} />
+        </Name>
+      </Footer>
     </Container>
   );
 };

@@ -1,19 +1,28 @@
 import React, { useContext } from 'react';
-const GlobalSettingsContext = React.createContext<{ isMobile: boolean }>({ isMobile: false });
 
-export const useGlobalSettings = () => {
-  const context = useContext(GlobalSettingsContext);
-
-  return context;
+type GlobalSettings = {
+  isMobile: boolean;
+  isTablet: boolean;
 };
 
-interface GlobalSettingsProviderProps {
-  isMobile: boolean;
+const GlobalSettingsContext = React.createContext<GlobalSettings>({
+  isMobile: false,
+  isTablet: false,
+});
+
+export const useGlobalSettings = () => {
+  return useContext(GlobalSettingsContext);
+};
+
+interface GlobalSettingsProviderProps extends GlobalSettings {
   children: React.ReactNode;
 }
+
 export const GlobalSettingsProvider = (props: GlobalSettingsProviderProps) => {
-  const { children, ...rest } = props;
+  const { children, isMobile, isTablet } = props;
   return (
-    <GlobalSettingsContext.Provider value={{ ...rest }}>{children}</GlobalSettingsContext.Provider>
+    <GlobalSettingsContext.Provider value={{ isMobile, isTablet }}>
+      {children}
+    </GlobalSettingsContext.Provider>
   );
 };

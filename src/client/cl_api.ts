@@ -1,15 +1,16 @@
 import { ClientUtils } from '@project-error/pe-utils';
-import { ATMInput } from '@typings/Account';
+import { AtmInput } from '@typings/Account';
 import { AccountEvents, CashEvents, InvoiceEvents } from '@typings/Events';
 import { ServerPromiseResp } from '@typings/http';
 import { Invoice, InvoiceOnlineInput } from '@typings/Invoice';
 import { translations } from 'i18n';
+import { ClUtils } from './cl_utils';
 
 export class Api {
   utils: ClientUtils;
 
   constructor() {
-    this.utils = new ClientUtils({ promiseTimout: 200 });
+    this.utils = ClUtils;
   }
 
   async getInvoices(): Promise<Invoice[]> {
@@ -82,7 +83,7 @@ export class Api {
 
   async depositMoney(amount: number) {
     try {
-      const payload: ATMInput = {
+      const payload: AtmInput = {
         amount,
         message: translations.t('Successfully deposited {{amount}} into selected account.', {
           amount,
@@ -98,7 +99,7 @@ export class Api {
 
   async withdrawMoney(amount: number) {
     try {
-      const payload: ATMInput = {
+      const payload: AtmInput = {
         amount,
         message: translations.t('Withdrew {{amount}} from an ATM.', {
           amount,

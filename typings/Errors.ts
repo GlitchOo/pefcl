@@ -14,6 +14,7 @@ export enum AccountErrors {
   AlreadyExists = 'AccountAlreadyExists',
   UserAlreadyExists = 'UserAlreadyExists',
   SameAccount = 'SameAccount',
+  MaxAccounts = 'MaxAccounts',
 }
 
 export enum CardErrors {

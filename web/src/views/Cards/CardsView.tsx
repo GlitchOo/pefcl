@@ -1,46 +1,38 @@
 import { AccountCard } from '@components/AccountCard';
 import Layout from '@components/Layout';
-import { PreHeading } from '@components/ui/Typography/BodyText';
-import { Heading1 } from '@components/ui/Typography/Headings';
 import { accountsAtom } from '@data/accounts';
 import { Backdrop, Stack } from '@mui/material';
 import { useAtom } from 'jotai';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { AnimatePresence, motion } from 'motion/react';
 import theme from '@utils/theme';
 import BankCards from './components/BankCards';
 import { selectedAccountIdAtom } from '@data/cards';
 import { AccountType } from '@typings/Account';
+import BankPanel from '@components/ui/BankPanel';
 
-const Container = styled.div`
-  overflow: auto;
+const Page = styled.div`
+  position: relative;
   height: 100%;
+  min-height: 0;
+  overflow: auto;
 `;
 
-const CardContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-  margin-left: -0.5rem;
-
-  & > div {
-    width: calc(33% - 0.5rem);
-    margin-left: 0.5rem;
-    margin-top: 0.5rem;
-  }
+const CardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
 `;
 
 const Modal = styled(motion.div)`
   z-index: 2;
-  padding: 2rem 3rem;
+  padding: 1.5rem 2rem;
   position: absolute;
-  width: calc(100% - 5rem);
-  height: 100%;
-  top: 0;
-  left: 5rem;
-  background-color: ${theme.palette.background.paper};
+  inset: 0;
+  background-color: ${theme.palette.background.default};
+  border-left: 1px solid var(--border-color);
 `;
 
 const CardsView = () => {
@@ -50,29 +42,26 @@ const CardsView = () => {
   const { t } = useTranslation();
 
   return (
-    <Layout>
-      <Container>
-        <Stack>
-          <Heading1>{t('Accounts')}</Heading1>
-          <PreHeading>{t('Handle cards for your accounts')}</PreHeading>
-        </Stack>
-
-        <CardContainer>
-          {accounts.map((account) => (
-            <div
-              key={account.id}
-              onClick={() =>
-                account.type !== AccountType.Shared && setSelectedAccountId(account.id)
-              }
-            >
-              <AccountCard
-                account={account}
-                selected={account.id === selectedAccountId}
-                isDisabled={account.type === AccountType.Shared}
-              />
-            </div>
-          ))}
-        </CardContainer>
+    <Layout title={t('Cards')} subtitle={t('Handle cards for your accounts')}>
+      <Page>
+        <BankPanel>          <CardGrid>
+            {accounts.map((account) => (
+              <div
+                key={account.id}
+                onClick={() =>
+                  account.type !== AccountType.Shared && setSelectedAccountId(account.id)
+                }
+              >
+                <AccountCard
+                  account={account}
+                  selected={account.id === selectedAccountId}
+                  isDisabled={account.type === AccountType.Shared}
+                  compact
+                />
+              </div>
+            ))}
+          </CardGrid>
+        </BankPanel>
 
         <Backdrop
           open={Boolean(selectedAccountId)}
@@ -85,16 +74,20 @@ const CardsView = () => {
 
         <AnimatePresence>
           {Boolean(selectedAccountId) && (
-            <Modal animate={{ x: 0 }} initial={{ x: 100 }} exit={{ x: 200, opacity: 0 }}>
+            <Modal animate={{ x: 0 }} initial={{ x: 40 }} exit={{ x: 80, opacity: 0 }}>
               <BankCards
                 selectedCardId={selectedCardId}
                 onSelectCardId={setSelectedCardId}
                 accountId={selectedAccountId}
+                onClose={() => {
+                  setSelectedAccountId(0);
+                  setSelectedCardId(0);
+                }}
               />
             </Modal>
           )}
         </AnimatePresence>
-      </Container>
+      </Page>
     </Layout>
   );
 };

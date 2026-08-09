@@ -1,5 +1,5 @@
 const esbuild = require('esbuild');
-const { esbuildDecorators } = require('@anatine/esbuild-decorators');
+const esbuildPluginTsc = require('esbuild-plugin-tsc');
 
 esbuild
   .build({
@@ -9,8 +9,8 @@ esbuild
     target: 'node16',
     outfile: 'dist/server.js',
     plugins: [
-      esbuildDecorators({
-        tsconfig: 'server/tsconfig.json',
+      esbuildPluginTsc({
+        tsconfigPath: 'server/tsconfig.json',
       }),
     ],
   })

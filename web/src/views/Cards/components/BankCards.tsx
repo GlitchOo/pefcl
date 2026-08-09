@@ -2,15 +2,23 @@ import { PreHeading } from '@components/ui/Typography/BodyText';
 import { Heading1 } from '@components/ui/Typography/Headings';
 import React, { useEffect, useState } from 'react';
 import BankCard from '@components/BankCard';
-import { AddRounded, ErrorRounded, InfoRounded } from '@mui/icons-material';
-import { Alert, Backdrop, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
+import { AddRounded, ArrowBackRounded, ErrorRounded, InfoRounded } from '@mui/icons-material';
+import {
+  Alert,
+  Backdrop,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+} from '@mui/material';
 import { Card, CreateCardInput } from '@typings/BankCard';
 import theme from '@utils/theme';
-import styled from 'styled-components';
+import styled from '@emotion/styled';
 import { useTranslation } from 'react-i18next';
 import CardActions from './CardActions';
 import { useConfig } from '@hooks/useConfig';
-import BaseDialog from '@components/Modals/BaseDialog';
+import BaseDialog from '@components/modals/BaseDialog';
 import { fetchNui } from '@utils/fetchNui';
 import { CardEvents } from '@typings/Events';
 import { useAtom } from 'jotai';
@@ -27,17 +35,18 @@ const CreateCard = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: ${theme.spacing(1)};
-  border: 1px dashed ${theme.palette.grey[500]};
+  border-radius: var(--card-radius);
+  border: 1px dashed ${theme.palette.text.disabled};
   font-size: 1.75rem;
-  transition: 300ms;
-
-  min-height: 7rem;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+  min-height: 8rem;
   width: auto;
+  background: rgba(124, 181, 24, 0.06);
 
   :hover {
     color: ${theme.palette.primary.main};
     border: 1px dashed ${theme.palette.primary.main};
+    background: var(--accent-muted);
   }
 
   svg {
@@ -75,9 +84,10 @@ interface BankCardsProps {
   accountId: number;
   selectedCardId: number;
   onSelectCardId(id: number): void;
+  onClose(): void;
 }
 
-const BankCards = ({ onSelectCardId, selectedCardId, accountId }: BankCardsProps) => {
+const BankCards = ({ onSelectCardId, selectedCardId, accountId, onClose }: BankCardsProps) => {
   const { t } = useTranslation();
   const [accounts] = useAtom(accountsAtom);
   const defaultAccount = accounts.find((account) => Boolean(account.isDefault));
@@ -142,9 +152,28 @@ const BankCards = ({ onSelectCardId, selectedCardId, accountId }: BankCardsProps
   return (
     <Stack direction="row" spacing={4} height="100%">
       <Stack flex="1" alignSelf="flex-start" maxHeight="100%">
-        <Stack>
-          <Heading1>{t('Cards')}</Heading1>
-          <PreHeading>{t('Select a card to handle, or order a new one.')}</PreHeading>
+        <Stack direction="row" spacing={1.5} alignItems="flex-start">
+          <IconButton
+            onClick={onClose}
+            aria-label={t('Back')}
+            size="small"
+            sx={{
+              mt: 0.35,
+              color: 'text.secondary',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              '&:hover': {
+                color: 'primary.main',
+                backgroundColor: 'var(--accent-muted)',
+              },
+            }}
+          >
+            <ArrowBackRounded />
+          </IconButton>
+          <Stack>
+            <Heading1>{t('Cards')}</Heading1>
+            <PreHeading>{t('Select a card to handle, or order a new one.')}</PreHeading>
+          </Stack>
         </Stack>
 
         <CardContainer>
@@ -183,6 +212,7 @@ const BankCards = ({ onSelectCardId, selectedCardId, accountId }: BankCardsProps
             <CardActions
               isBlocked={selectedCard?.isBlocked}
               cardId={selectedCardId}
+              onBack={() => onSelectCardId(0)}
               onBlock={() => {
                 updateCards(accountId);
                 onSelectCardId(0);

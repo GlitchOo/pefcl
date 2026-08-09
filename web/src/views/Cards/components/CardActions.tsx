@@ -6,26 +6,28 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   Stack,
 } from '@mui/material';
 import { Heading1 } from '@components/ui/Typography/Headings';
 import { PreHeading } from '@components/ui/Typography/BodyText';
 import { useTranslation } from 'react-i18next';
-import BaseDialog from '@components/Modals/BaseDialog';
+import BaseDialog from '@components/modals/BaseDialog';
 import { fetchNui } from '@utils/fetchNui';
 import { CardEvents } from '@typings/Events';
-import { CheckRounded, ErrorRounded, InfoRounded } from '@mui/icons-material';
+import { ArrowBackRounded, CheckRounded, ErrorRounded, InfoRounded } from '@mui/icons-material';
 import { BlockCardInput, DeleteCardInput, UpdateCardPinInput } from '@typings/BankCard';
 import PinField from '@components/ui/Fields/PinField';
 
 interface CardActionsProps {
   cardId: number;
   isBlocked?: boolean;
+  onBack?(): void;
   onBlock?(): void;
   onDelete?(): void;
 }
 
-const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps) => {
+const CardActions = ({ cardId, onBack, onBlock, onDelete, isBlocked }: CardActionsProps) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -117,9 +119,30 @@ const CardActions = ({ cardId, onBlock, onDelete, isBlocked }: CardActionsProps)
     <>
       <Stack maxWidth="22rem">
         <Stack spacing={2}>
-          <Stack>
-            <Heading1>{t('Actions')}</Heading1>
-            <PreHeading>{t('Block, update pin and more.')}</PreHeading>
+          <Stack direction="row" spacing={1.5} alignItems="flex-start">
+            {onBack && (
+              <IconButton
+                onClick={onBack}
+                aria-label={t('Back')}
+                size="small"
+                sx={{
+                  mt: 0.35,
+                  color: 'text.secondary',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  '&:hover': {
+                    color: 'primary.main',
+                    backgroundColor: 'var(--accent-muted)',
+                  },
+                }}
+              >
+                <ArrowBackRounded />
+              </IconButton>
+            )}
+            <Stack>
+              <Heading1>{t('Actions')}</Heading1>
+              <PreHeading>{t('Block, update pin and more.')}</PreHeading>
+            </Stack>
           </Stack>
 
           <Stack spacing={1} marginTop={2}>

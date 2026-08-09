@@ -1,5 +1,5 @@
 import { NetPromise, PromiseEventListener } from '@decorators/NetPromise';
-import { GetATMAccountInput, GetATMAccountResponse } from '@server/../../typings/Account';
+import { GetAtmAccountInput, GetAtmAccountResponse } from '@server/../../typings/Account';
 import {
   BlockCardInput,
   Card,
@@ -25,7 +25,7 @@ export class CardController {
   }
 
   @NetPromise(AccountEvents.GetAtmAccount)
-  async getAtmAccount(req: Request<GetATMAccountInput>, res: Response<GetATMAccountResponse>) {
+  async getAtmAccount(req: Request<GetAtmAccountInput>, res: Response<GetAtmAccountResponse>) {
     try {
       const result = await this.cardService.getAccountByCard(req);
       res({ status: 'ok', data: result });

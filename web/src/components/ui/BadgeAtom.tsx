@@ -7,19 +7,20 @@ interface BadgeAtomProps extends BadgeProps {
   countAtom: Atom<number>;
 }
 
-const BadgeAtomContent = ({ countAtom, children }: BadgeAtomProps) => {
+const BadgeAtomContent = ({ countAtom, children, ...props }: BadgeAtomProps) => {
   const [amount] = useAtom(countAtom);
 
   return (
-    <Badge color="error" badgeContent={amount}>
+    <Badge color="error" badgeContent={amount} {...props}>
       {children}
     </Badge>
   );
 };
 
 const BadgeAtom = (props: BadgeAtomProps) => {
+  const { countAtom: _countAtom, children, ...badgeProps } = props;
   return (
-    <React.Suspense fallback={<Badge badgeContent={'..'} {...props} />}>
+    <React.Suspense fallback={<Badge badgeContent={'..'} {...badgeProps}>{children}</Badge>}>
       <BadgeAtomContent {...props} />
     </React.Suspense>
   );

@@ -30,12 +30,26 @@ export interface ResourceConfig {
     currency: string;
     identifierType: string;
   };
+  /** See docs/framework-integration.md */
   frameworkIntegration: {
-    enabled: boolean;
+    /** false = standalone; true/"auto" = resolve bridge from resource + detection */
+    enabled: boolean | 'auto';
+    /** "auto"/"builtin" = built-in qb/qbx/esx; any other name = external bridge resource */
     resource: string;
     syncInitialBankBalance: boolean;
     isCardsEnabled: boolean;
     maxPlayerDistance: number;
+    /** Inventory item used by built-in bridges for bank cards */
+    cardItem?: string;
+    /** Optional job shared-account rules for built-in bridges */
+    businessAccounts?: Record<
+      string,
+      {
+        AccountName?: string;
+        AdminRole?: number;
+        ContributorRole?: number;
+      }
+    >;
   };
   database: {
     profileQueries: boolean;

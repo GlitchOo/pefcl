@@ -9,9 +9,15 @@ import { Heading5 } from '@ui/Typography/Headings';
 import theme from '../../../utils/theme';
 
 const Container = styled.div`
-  padding: ${theme.spacing(3)};
-  border-radius: ${theme.spacing(2)};
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: ${theme.spacing(2)} ${theme.spacing(2.25)};
+  border-radius: var(--card-radius);
   background-color: ${theme.palette.background.paper};
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `;
 
 const LoadingContainer = styled(Container)``;
@@ -21,37 +27,38 @@ const Total = styled.div`
   justify-content: center;
   align-items: center;
   text-align: center;
-
-  height: 2rem;
-  padding: 0 0.73rem;
-
-  border-radius: ${theme.spacing(1)};
+  min-width: 2rem;
+  height: 1.6rem;
+  padding: 0 0.55rem;
+  border-radius: 6px;
   font-weight: ${theme.typography.fontWeightBold};
-  background-color: ${theme.palette.background.light4};
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: ${theme.palette.primary.light};
+  background-color: var(--accent-muted);
+  border: 1px solid rgba(124, 181, 24, 0.25);
 `;
 
 const Content = styled.div`
-  ::-webkit-scrollbar {
-    width: 0.25rem;
-  }
-
-  ::-webkit-scrollbar-track {
-    background-color: ${theme.palette.background.dark4};
-    border-radius: 2rem;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    border-radius: 2rem;
-    background-color: #80cae24a;
-  }
-
-  padding-right: 12px;
-  max-height: 16rem;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
+  padding-right: 4px;
+  margin: 0.65rem 0;
 `;
 
 const Title = styled(Heading5)`
-  color: ${theme.palette.primary.dark};
+  color: ${theme.palette.text.primary};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 600;
+`;
+
+const Footer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
 `;
 
 interface DashboardContainerProps {
@@ -73,18 +80,16 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
 
   return (
     <Container>
-      <Stack spacing={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Title>{title}</Title>
-          <Total>{total}</Total>
-        </Stack>
-
-        <Content>{children}</Content>
-
-        <Stack justifyContent="flex-end" alignItems="flex-end">
-          <Button onClick={() => navigate(viewAllRoute)}>{t('View all')}</Button>
-        </Stack>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Title>{title}</Title>
+        <Total>{total}</Total>
       </Stack>
+
+      <Content>{children}</Content>
+
+      <Footer>
+        <Button onClick={() => navigate(viewAllRoute)}>{t('View all')}</Button>
+      </Footer>
     </Container>
   );
 };
@@ -97,8 +102,8 @@ export const DashboardContainerFallback: React.FC<{ title: string }> = ({ title 
         <Total>0</Total>
       </Stack>
 
-      <Stack p={8} alignItems="center">
-        <CircularProgress />
+      <Stack flex={1} alignItems="center" justifyContent="center">
+        <CircularProgress sx={{ color: theme.palette.primary.main }} />
       </Stack>
     </LoadingContainer>
   );

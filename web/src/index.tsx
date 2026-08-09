@@ -11,7 +11,11 @@ import { NuiProvider } from 'react-fivem-hooks';
 import { I18nextProvider } from 'react-i18next';
 import { GlobalSettingsProvider } from '@hooks/useGlobalSettings';
 
-const isMobile = window.location.hash.includes('/mobile');
+const hash = window.location.hash;
+const isMobile = hash.includes('/mobile');
+const isTablet =
+  hash.includes('device=tablet') ||
+  new URLSearchParams(window.location.search).get('device') === 'tablet';
 
 const container = document.getElementById('root');
 if (!container) {
@@ -23,7 +27,7 @@ const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <NuiProvider>
-      <GlobalSettingsProvider isMobile={isMobile}>
+      <GlobalSettingsProvider isMobile={isMobile} isTablet={isTablet}>
         <I18nextProvider i18n={i18n}>
           <HashRouter>
             <ThemeProvider theme={theme}>

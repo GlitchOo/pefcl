@@ -8,6 +8,7 @@ export const resourceDefaultName = 'pefcl';
 const now = dayjs();
 
 export const DEFAULT_PAGINATION_LIMIT = 5;
+export const DESKTOP_TRANSACTIONS_PAGE_SIZE = 12;
 export const defaultWithdrawOptions = [500, 1000, 1500, 3000, 5000, 7500];
 
 export const mockedAccounts: Account[] = [

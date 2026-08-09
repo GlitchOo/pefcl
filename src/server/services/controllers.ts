@@ -6,3 +6,4 @@ import './account/account.controller';
 import './transaction/transaction.controller';
 import './broadcast/broadcast.controller';
 import './card/card.controller';
+import './session/bankingSession.controller';

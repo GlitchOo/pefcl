@@ -1,5 +1,5 @@
-import AddUserModal from '@components/Modals/AddUser';
-import RemoveUserModal from '@components/Modals/RemoveUser';
+import AddUserModal from '@components/modals/AddUser';
+import RemoveUserModal from '@components/modals/RemoveUser';
 import Button from '@components/ui/Button';
 import { Heading5 } from '@components/ui/Typography/Headings';
 import {

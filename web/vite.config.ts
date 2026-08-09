@@ -8,7 +8,6 @@ const { dependencies, name } = packageJson;
 
 delete dependencies['@emotion/styled'];
 delete dependencies['@mui/material'];
-delete dependencies['@mui/styles'];
 
 // https://vitejs.dev/config/
 export default defineConfig({

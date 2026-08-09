@@ -28,7 +28,7 @@ CreateThread(function ()
             
 
             if IsControlJustReleased(0, 38) then
-              exports["pefcl"]:openBank()
+              exports[GetCurrentResourceName()]:openBank()
             end
           end
 
@@ -45,7 +45,7 @@ CreateThread(function ()
           display_help_text("Open atm: ~INPUT_PICKUP~")
           
           if IsControlJustReleased(0, 38) then
-            exports["pefcl"]:openAtm()
+            exports[GetCurrentResourceName()]:openAtm()
           end
 
           sleep = 0

@@ -7,7 +7,7 @@ import { Heading5 } from '../Typography/Headings';
 const Container = styled.div`
   display: flex;
   padding: 0.75rem 1rem;
-  border-radius: ${theme.spacing(1)};
+  border-radius: 6px;
   background-color: ${theme.palette.background.dark12};
 
   & > div {
@@ -20,8 +20,8 @@ const Container = styled.div`
   input:-webkit-autofill:active {
     color: white !important;
     -webkit-text-fill-color: white !important;
-    box-shadow: 0 0 0 30px rgb(16 26 37) inset !important;
-    -webkit-box-shadow: 0 0 0 30px rgb(16 26 37) inset !important;
+    box-shadow: 0 0 0 30px rgba(28, 33, 42, 0.88) inset !important;
+    -webkit-box-shadow: 0 0 0 30px rgba(28, 33, 42, 0.88) inset !important;
   }
 `;
 

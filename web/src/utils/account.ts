@@ -1,4 +1,4 @@
-import { Account, AccountRole, AccountType } from '@typings/Account';
+import { Account, AccountRole } from '@typings/Account';
 
 export const getIsAdmin = (account: Account) => {
   return [AccountRole.Admin, AccountRole.Owner].includes(account.role);
@@ -6,10 +6,6 @@ export const getIsAdmin = (account: Account) => {
 
 export const getIsOwner = (account: Account) => {
   return [AccountRole.Owner].includes(account.role);
-};
-
-export const getIsShared = (account: Account) => {
-  return account.type === AccountType.Shared;
 };
 
 export const updateAccount = (accounts: Account[], updatedAccount: Account): Account[] => {

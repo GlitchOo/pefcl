@@ -26,6 +26,7 @@ export interface Transaction {
 export interface GetTransactionsInput {
   limit: number;
   offset: number;
+  accountId?: number;
 }
 
 export interface GetTransactionsResponse extends GetTransactionsInput {

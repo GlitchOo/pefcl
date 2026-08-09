@@ -1,7 +1,7 @@
 import {
   AccountRole,
   AccountType,
-  ATMInput,
+  AtmInput,
   CreateAccountInput,
   ExternalAccount,
 } from '@server/../../typings/Account';
@@ -68,7 +68,7 @@ describe('Controller: account', () => {
     });
 
     test('AccountEvents.DepositMoney', () => {
-      const payload: ATMInput = {
+      const payload: AtmInput = {
         amount: 2,
         message: 'Example',
       };
@@ -81,7 +81,7 @@ describe('Controller: account', () => {
     });
 
     test('AccountEvents.WithdrawMoney', () => {
-      const payload: ATMInput = {
+      const payload: AtmInput = {
         amount: 2,
         message: 'Example',
       };

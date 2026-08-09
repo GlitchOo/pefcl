@@ -2,6 +2,7 @@ import { Export, ExportListener } from '@decorators/Export';
 import { NetPromise, PromiseEventListener } from '@decorators/NetPromise';
 import { OnlineUser } from '@server/../../typings/user';
 import { config } from '@server/utils/server-config';
+import { isFrameworkIntegrationActive } from '@server/utils/frameworkIntegration';
 import { ChangeCashInput } from '@typings/Cash';
 import { CashEvents, UserEvents } from '@typings/Events';
 import { ServerExports } from '@typings/exports/server';
@@ -61,7 +62,7 @@ export class CashController {
   /* When starting the resource / new player joining. We should handle the default account. */
   @Event(UserEvents.Loaded)
   async onUserLoaded(user: OnlineUser) {
-    if (config.frameworkIntegration?.enabled) return;
+    if (isFrameworkIntegrationActive()) return;
     this._cashService.createInitialCash(user.source);
   }
 }

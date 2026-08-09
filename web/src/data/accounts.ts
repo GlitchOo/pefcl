@@ -29,29 +29,40 @@ export const accountsAtom = atom<Promise<Account[]>, Account[] | undefined, Prom
   },
 );
 
-export const totalBalanceAtom = atom((get) =>
-  get(accountsAtom).reduce((prev, curr) => prev + curr.balance, 0),
-);
+export const totalBalanceAtom = atom(async (get) => {
+  const accounts = await get(accountsAtom);
+  return Array.isArray(accounts) ? accounts.reduce((prev, curr) => prev + curr.balance, 0) : 0;
+});
 
 export const activeAccountAtomId = atom<number>(0);
 export const activeAccountAtom = atom(
-  (get) => get(accountsAtom).find((account) => account.id === get(activeAccountAtomId)),
+  async (get) => {
+    const accounts = await get(accountsAtom);
+    return Array.isArray(accounts)
+      ? accounts.find((account) => account.id === get(activeAccountAtomId))
+      : undefined;
+  },
   (_get, set, str: number) => set(activeAccountAtomId, str),
 );
 
-export const defaultAccountAtom = atom((get) =>
-  get(accountsAtom).find((account) => account.isDefault),
-);
+export const defaultAccountAtom = atom(async (get) => {
+  const accounts = await get(accountsAtom);
+  return Array.isArray(accounts) ? accounts.find((account) => account.isDefault) : undefined;
+});
 
-export const defaultAccountBalance = atom((get) => get(defaultAccountAtom)?.balance);
+export const defaultAccountBalance = atom(async (get) => {
+  const defaultAccount = await get(defaultAccountAtom);
+  return defaultAccount?.balance;
+});
 
 /* Saved order for cards */
 type OrderedAccounts = Record<number, number>;
 const accountOrderAtom = atom<string>(localStorage.getItem('order') ?? '');
 
-export const orderedAccountsAtom = atom<Account[], OrderedAccounts>(
-  (get) => {
-    const accounts = get(accountsAtom);
+export const orderedAccountsAtom = atom<Promise<Account[]>, OrderedAccounts, Promise<void>>(
+  async (get) => {
+    const accounts = await get(accountsAtom);
+    if (!Array.isArray(accounts)) return [];
     const storageOrder = get(accountOrderAtom);
 
     try {
@@ -61,8 +72,7 @@ export const orderedAccountsAtom = atom<Account[], OrderedAccounts>(
     }
 
     const order = JSON.parse(storageOrder);
-
-    const sorted = accounts.sort((a, b) => {
+    const sorted = [...accounts].sort((a, b) => {
       const aIndex = order?.[a.id] ?? 0;
       const bIndex = order?.[b.id] ?? 0;
 

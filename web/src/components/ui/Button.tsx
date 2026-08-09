@@ -1,4 +1,3 @@
-// import styled from '@emotion/styled';
 import styled from '@emotion/styled';
 import { ButtonProps, css } from '@mui/material';
 import { Button as ButtonBase } from '@mui/material';
@@ -7,30 +6,48 @@ import theme from '../../utils/theme';
 
 const colors = {
   inherit: '',
-  secondary: '',
-  success: '',
+  secondary: css`
+    color: ${theme.palette.secondary.main};
+  `,
+  success: css`
+    color: #0b110e;
+    background: linear-gradient(180deg, ${theme.palette.success.light}, ${theme.palette.success.main});
+    border-color: transparent;
+  `,
   info: '',
   warning: '',
   error: css`
     color: ${theme.palette.error.main};
-    background-color: rgba(255, 77, 77, 0.14);
+    background-color: rgba(232, 92, 74, 0.14);
   `,
   primary: css`
-    color: ${theme.palette.primary.main};
+    color: #0b110e;
+    background: linear-gradient(180deg, ${theme.palette.primary.light}, ${theme.palette.primary.main});
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(124, 181, 24, 0.22);
   `,
 };
 
 const StyledButtonBase = styled(ButtonBase)`
-  font-weight: 200;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   box-shadow: none;
-  border-radius: ${theme.spacing(1)};
-  background-color: #1d2a3a;
-  padding: 0.4rem 2rem;
+  border-radius: 10px;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--glass-border);
+  padding: 0.55rem 1.5rem;
+  transition: all var(--transition-fast);
+  text-transform: none;
 
   ${({ color }) => colors[color ?? 'primary']};
 
+  :hover:not(:disabled) {
+    filter: brightness(1.06);
+    border-color: var(--border-accent);
+  }
+
   :disabled {
-    opacity: 0.25;
+    opacity: 0.35;
     ${({ color }) => colors[color ?? 'primary']};
   }
 `;

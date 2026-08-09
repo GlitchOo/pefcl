@@ -4,6 +4,11 @@ export enum GeneralEvents {
   ResourceStopped = 'pefcl:resourceStopped',
 }
 
+export enum SessionEvents {
+  Open = 'pefcl:session:open',
+  Close = 'pefcl:session:close',
+}
+
 export enum UserEvents {
   GetUsers = 'pefcl:userEventsGetUsers',
   Loaded = 'pefcl:userLoaded',

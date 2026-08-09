@@ -1,14 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600&display=swap');
+/* Fleeca Bank — modern fintech theme */
+:root {
+  --bg-primary: #0b110e;
+  --bg-secondary: #101814;
+  --bg-card: #162019;
+  --bg-card-hover: #1c2a21;
+  --bg-elevated: #1a2620;
+  --border-color: rgba(255, 255, 255, 0.07);
+  --border-accent: rgba(124, 181, 24, 0.55);
+  --accent: #7cb518;
+  --accent-hover: #95d12a;
+  --accent-dark: #5f8f12;
+  --accent-muted: rgba(124, 181, 24, 0.14);
+  --accent-glow: rgba(124, 181, 24, 0.28);
+  --success: #3dcf7a;
+  --success-hover: #55e090;
+  --warning: #e8b84a;
+  --danger: #e85c4a;
+  --text-primary: #f4f7f2;
+  --text-secondary: #a8b5a6;
+  --text-muted: #6d7a6b;
+  --panel-radius: 14px;
+  --card-radius: 12px;
+  --transition-fast: 0.15s ease;
+  --transition-smooth: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-panel: 0 18px 48px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.28);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --scrollbar-width: 8px;
+  --scrollbar-track: rgba(0, 0, 0, 0.28);
+  --scrollbar-thumb: rgba(124, 181, 24, 0.4);
+  --scrollbar-thumb-hover: rgba(124, 181, 24, 0.65);
+  --card-personal: linear-gradient(135deg, #3d6b14 0%, #245010 48%, #152e0c 100%);
+  --card-shared: linear-gradient(135deg, #243028 0%, #182019 55%, #101814 100%);
+  --card-debit: linear-gradient(135deg, #6bb012 0%, #3f7a10 42%, #1f450c 100%);
+  --card-blocked: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%);
+  --font-ui: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+}
 
 * {
   box-sizing: border-box;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-ui);
 }
 
 body {
   margin: 0;
   height: 100vh;
   overflow: hidden;
+  color: var(--text-primary);
+  background: transparent;
 }
 
 #root {

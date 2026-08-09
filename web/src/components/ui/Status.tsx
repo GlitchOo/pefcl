@@ -17,15 +17,18 @@ const colors: Record<Color, SerializedStyles> = {
   info: css``,
   success: css`
     color: ${theme.palette.success.contrastText};
-    background-color: ${theme.palette.primary.dark};
+    background-color: ${theme.palette.success.main};
   `,
-  warning: css``,
+  warning: css`
+    color: #0b110e;
+    background-color: ${theme.palette.warning.main};
+  `,
 };
 
 const Container = styled.div<{ color: Color }>`
   text-transform: uppercase;
   padding: 0.35rem 1.25rem;
-  border-radius: ${theme.spacing(1)};
+  border-radius: 6px;
 
   color: ${theme.palette.primary.main};
   background-color: ${theme.palette.background.light2};

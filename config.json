@@ -5,11 +5,13 @@
     "identifierType": "license"
   },
   "frameworkIntegration": {
-    "enabled": false,
-    "resource": "your-resource",
+    "enabled": true,
+    "resource": "auto",
     "syncInitialBankBalance": true,
-    "isCardsEnabled": false,
-    "maxPlayerDistance": 10.0
+    "isCardsEnabled": true,
+    "maxPlayerDistance": 10.0,
+    "cardItem": "visa",
+    "businessAccounts": {}
   },
   "database": {
     "profileQueries": true

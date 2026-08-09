@@ -42,12 +42,12 @@ export interface Account {
   createdAt?: string;
 }
 
-export interface GetATMAccountInput {
+export interface GetAtmAccountInput {
   pin: number;
   cardId: number;
 }
 
-export interface GetATMAccountResponse {
+export interface GetAtmAccountResponse {
   card: Card;
   account: Account;
 }
@@ -103,12 +103,14 @@ export interface RemoveFromSharedAccountInput {
 
 export type TransactionAccount = Pick<Account, 'id' | 'accountName'>;
 
-export interface ATMInput {
+export interface AtmInput {
   amount: number;
   message: string;
   accountId?: number;
   cardId?: number;
   cardPin?: number;
+  /** When true (ATM session + cards enabled), cardId+PIN are mandatory */
+  requireCard?: boolean;
 }
 
 export interface ExternalAccount {

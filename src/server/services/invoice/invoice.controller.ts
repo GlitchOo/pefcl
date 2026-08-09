@@ -14,6 +14,7 @@ import { UserService } from 'services/user/user.service';
 import { Controller } from '../../decorators/Controller';
 import { NetPromise, PromiseEventListener } from '../../decorators/NetPromise';
 import { InvoiceService } from './invoice.service';
+import { assertPositiveMoney } from '@server/utils/money';
 
 @Controller('Invoice')
 @ExportListener()
@@ -50,34 +51,69 @@ export class InvoiceController {
     });
   }
 
+  /** Trusted server scripts may set full identity fields. */
   @Export(ServerExports.CreateInvoice)
+  async createInvoiceExport(req: Request<CreateInvoiceInput>, res: Response<Invoice>) {
+    try {
+      assertPositiveMoney(req.data.amount);
+      const data = await this._InvoiceService.createInvoice(req.data);
+      return res({ status: 'ok', data: data.toJSON() });
+    } catch (err) {
+      return res({ status: 'error', errorMsg: err.message });
+    }
+  }
+
+  /** Client NetPromise — never trust client-supplied fromIdentifier / from name. */
   @NetPromise(InvoiceEvents.CreateInvoice)
   async createInvoice(req: Request<CreateInvoiceInput>, res: Response<Invoice>) {
-    const data = await this._InvoiceService.createInvoice(req.data);
-    return res({ status: 'ok', data: data.toJSON() });
+    try {
+      const fromUser = this._userService.getUser(req.source);
+      assertPositiveMoney(req.data.amount);
+
+      const data = await this._InvoiceService.createInvoice({
+        ...req.data,
+        from: fromUser.name,
+        fromIdentifier: fromUser.getIdentifier(),
+        // Clients cannot route payment into arbitrary society accounts
+        receiverAccountIdentifier: undefined,
+      });
+
+      return res({ status: 'ok', data: data.toJSON() });
+    } catch (err) {
+      return res({ status: 'error', errorMsg: err.message });
+    }
   }
 
   @NetPromise(InvoiceEvents.CreateOnlineInvoice)
   async createOnlineInvoice(req: Request<InvoiceOnlineInput>, res: Response<Invoice>) {
-    const toUser = this._userService.getUser(req.data.source);
-    const fromUser = this._userService.getUser(req.source);
-    const from = fromUser.name;
+    try {
+      assertPositiveMoney(req.data.amount);
+      const toUser = this._userService.getUser(req.data.source);
+      const fromUser = this._userService.getUser(req.source);
 
-    const data = await this._InvoiceService.createInvoice({
-      ...req.data,
-      from: from,
-      to: toUser.name,
-      toIdentifier: toUser.getIdentifier(),
-      fromIdentifier: fromUser.getIdentifier(),
-    });
+      const data = await this._InvoiceService.createInvoice({
+        amount: req.data.amount,
+        message: req.data.message,
+        from: fromUser.name,
+        to: toUser.name,
+        toIdentifier: toUser.getIdentifier(),
+        fromIdentifier: fromUser.getIdentifier(),
+      });
 
-    return res({ status: 'ok', data: data.toJSON() });
+      return res({ status: 'ok', data: data.toJSON() });
+    } catch (err) {
+      return res({ status: 'error', errorMsg: err.message });
+    }
   }
 
   @Export(ServerExports.PayInvoice)
   @NetPromise(InvoiceEvents.PayInvoice)
   async payInvoice(req: Request<PayInvoiceInput>, res: Response<any>) {
-    await this._InvoiceService.payInvoice(req);
-    return res({ status: 'ok', data: {} });
+    try {
+      await this._InvoiceService.payInvoice(req);
+      return res({ status: 'ok', data: {} });
+    } catch (err) {
+      return res({ status: 'error', errorMsg: err.message });
+    }
   }
 }

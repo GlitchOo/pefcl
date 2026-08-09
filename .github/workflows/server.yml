@@ -14,32 +14,26 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup node environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - uses: actions/cache@v2
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            src/package-lock.json
       - name: Install deps (Translations)
         working-directory: .
-        run: yarn --frozen-lockfile
+        run: npm ci --ignore-scripts
       - name: Generate translations
         working-directory: .
         run: |
-          yarn translations:generate
-          yarn translations:generate-index
+          npm run translations:generate
+          npm run translations:generate-index
       - name: Install deps
-        run: yarn --frozen-lockfile
+        run: npm ci --ignore-scripts
       - name: Linting
-        run: yarn lint
+        run: npm run lint
       - name: Type checking
-        run: yarn tsc
+        run: npm run tsc

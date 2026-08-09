@@ -1,15 +1,7 @@
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const ModuleFederationPlugin = require('webpack/lib/container/ModuleFederationPlugin');
-const deps = require('./package.json').dependencies;
 const port = process.env.PORT ?? 3002;
-
-/* TODO: Fix for real */
-/* Probably bad way of fixing this */
-delete deps['@emotion/styled'];
-delete deps['@mui/material'];
-delete deps['@mui/styles'];
 
 module.exports = {
   entry: './src/bootstrapMobile.ts',
@@ -48,13 +40,6 @@ module.exports = {
             loader: 'file-loader',
           },
         ],
-      },
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-        },
       },
       {
         test: /\.(css|s[ac]ss)$/i,

@@ -24,7 +24,16 @@ import config from './cl_config';
 const lbPhoneExports = global.exports['lb-phone'];
 const lbTabletExports = global.exports['lb-tablet'];
 
-const useFrameworkIntegration = config.frameworkIntegration?.enabled;
+const isFrameworkIntegrationActive = (): boolean => {
+  const fi = config.frameworkIntegration;
+  if (!fi?.enabled) return false;
+  if (fi.enabled === 'auto' || fi.resource === 'auto' || fi.resource === 'builtin') {
+    return (GlobalState as Record<string, unknown>)['pefcl:frameworkActive'] === true;
+  }
+  return true;
+};
+
+const useFrameworkIntegration = isFrameworkIntegrationActive();
 let hasNUILoaded = false;
 
 emitNet(UserEvents.LoadClient);
@@ -51,31 +60,34 @@ const waitForNUILoaded = (checkInterval = 250): Promise<void> => {
 };
 
 const SendBankUIMessage = (app: string, method: string, data: unknown) => {
-  SendNUIMessage({
+  const payload = {
     app,
     method,
     data,
-  });
+  };
 
+  SendNUIMessage(payload);
+
+  // LB Phone/Tablet: SendCustomAppMessage(identifier, data) — not (app, method, data)
   if (GetResourceState('lb-phone') === 'started') {
-    lbPhoneExports.SendCustomAppMessage(app, method, data);
+    lbPhoneExports.SendCustomAppMessage(app, payload);
   }
 
   if (GetResourceState('lb-tablet') === 'started') {
-    lbTabletExports.SendCustomAppMessage(app, method, data);
+    lbTabletExports.SendCustomAppMessage(app, payload);
   }
 };
 
 onNet(Broadcasts.NewAccount, (payload: Account) => {
-  SendBankUIMessage('PEFCL', Broadcasts.NewAccount, payload);
+  SendBankUIMessage('pefcl', Broadcasts.NewAccount, payload);
 });
 
-onNet(Broadcasts.NewAccountBalance, (balance: number) => {
-  SendBankUIMessage('PEFCL', Broadcasts.NewAccountBalance, balance);
+onNet(Broadcasts.NewAccountBalance, (account: Account) => {
+  SendBankUIMessage('pefcl', Broadcasts.NewAccountBalance, account);
 });
 
 onNet(Broadcasts.NewTransaction, (payload: Transaction) => {
-  SendBankUIMessage('PEFCL', Broadcasts.NewTransaction, payload);
+  SendBankUIMessage('pefcl', Broadcasts.NewTransaction, payload);
   if (GetResourceState('lb-phone') === 'started') {
     if (
       (payload?.type == TransactionType.Incoming &&
@@ -96,11 +108,11 @@ onNet(Broadcasts.NewTransaction, (payload: Transaction) => {
 });
 
 onNet(Broadcasts.UpdatedAccount, (payload: Account) => {
-  SendBankUIMessage('PEFCL', Broadcasts.UpdatedAccount, payload);
+  SendBankUIMessage('pefcl', Broadcasts.UpdatedAccount, payload);
 });
 
 onNet(Broadcasts.NewInvoice, (payload: Invoice, isReceiver: boolean) => {
-  SendBankUIMessage('PEFCL', Broadcasts.NewInvoice, payload);
+  SendBankUIMessage('pefcl', Broadcasts.NewInvoice, payload);
   if (GetResourceState('lb-phone') === 'started') {
     if (isReceiver) {
       lbPhoneExports.SendNotification({
@@ -113,18 +125,18 @@ onNet(Broadcasts.NewInvoice, (payload: Invoice, isReceiver: boolean) => {
 });
 
 onNet(Broadcasts.NewSharedUser, () => {
-  SendBankUIMessage('PEFCL', Broadcasts.NewSharedUser, {});
+  SendBankUIMessage('pefcl', Broadcasts.NewSharedUser, {});
 });
 
 onNet(Broadcasts.RemovedSharedUser, () => {
-  SendBankUIMessage('PEFCL', Broadcasts.RemovedSharedUser, {});
+  SendBankUIMessage('pefcl', Broadcasts.RemovedSharedUser, {});
 });
 
 onNet(UserEvents.Loaded, async (user: OnlineUser) => {
   console.debug('Waiting for NUI to load ..');
   await waitForNUILoaded();
   console.debug('Loaded. Emitting data to NUI.');
-  SendBankUIMessage('PEFCL', UserEvents.Loaded, true);
+  SendBankUIMessage('pefcl', UserEvents.Loaded, true);
 
   if (!useFrameworkIntegration) {
     StatSetInt(CASH_BAL_STAT, (await API.getMyCash()) ?? 0, true);
@@ -132,7 +144,7 @@ onNet(UserEvents.Loaded, async (user: OnlineUser) => {
 });
 
 onNet(UserEvents.Unloaded, () => {
-  SendBankUIMessage('PEFCL', UserEvents.Unloaded, {});
+  SendBankUIMessage('pefcl', UserEvents.Unloaded, {});
 });
 
 const CASH_BAL_STAT = GetHashKey('MP0_WALLET_BALANCE');
@@ -180,7 +192,7 @@ RegisterCommand(
     console.debug('Waiting for NUI to load ..');
     await waitForNUILoaded();
     console.debug('Loaded. Emitting data to NUI.');
-    SendBankUIMessage('PEFCL', UserEvents.Loaded, true);
+    SendBankUIMessage('pefcl', UserEvents.Loaded, true);
   },
   false,
 );

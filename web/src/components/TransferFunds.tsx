@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Box, FormHelperText, LinearProgress, Stack } from '@mui/material';
+import { Alert, FormHelperText, LinearProgress, Stack } from '@mui/material';
 import { useAtom } from 'jotai';
 import { accountsAtom, defaultAccountAtom } from '../data/accounts';
-import { Heading5 } from './ui/Typography/Headings';
+import { Heading6 } from './ui/Typography/Headings';
 import AccountSelect from './AccountSelect';
 import Button from './ui/Button';
 import { useTranslation } from 'react-i18next';
@@ -14,9 +14,55 @@ import { CreateTransferInput, TransferType } from '@typings/Transaction';
 import { externalAccountsAtom } from '@data/externalAccounts';
 import { GenericErrors } from '@typings/Errors';
 import NewBalance from './ui/NewBalance';
+import BankPanel from './ui/BankPanel';
+import styled from '@emotion/styled';
+import theme from '@utils/theme';
+import { formatMoney } from '@utils/currency';
+import { useConfig } from '@hooks/useConfig';
+
+const Page = styled.div`
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.85fr) minmax(0, 1.5fr);
+  gap: 1.15rem;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+`;
+
+const SummaryCard = styled(BankPanel)`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(124, 181, 24, 0.18), transparent 50%),
+    var(--bg-card);
+  border-color: rgba(124, 181, 24, 0.22);
+`;
+
+const Balance = styled.div`
+  font-size: 1.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  color: ${theme.palette.primary.light};
+`;
+
+const FormCard = styled(BankPanel)`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+`;
 
 const TransferFunds: React.FC<{ onClose?(): void }> = ({ onClose }) => {
   const { t } = useTranslation();
+  const config = useConfig();
   const [amount, setAmount] = useState('');
   const [accounts, updateAccounts] = useAtom(accountsAtom);
   const [, updateTransactions] = useAtom(transactionBaseAtom);
@@ -79,12 +125,24 @@ const TransferFunds: React.FC<{ onClose?(): void }> = ({ onClose }) => {
   const isValidNewBalance = newBalance >= 0;
 
   return (
-    <>
-      <Box p="2rem 0 0" display="flex" flexDirection="column">
-        <Stack spacing={4}>
-          <Stack direction="row" spacing={4}>
-            <Stack flex={1} spacing={1}>
-              <Heading5>{t('From account')}</Heading5>
+    <Page>
+      <SummaryCard title={t('From balance')}>
+        <div>
+          <Heading6>{fromAccount?.accountName ?? t('Select an account')}</Heading6>
+          <Balance>
+            {formatMoney(fromAccount?.balance ?? 0, config.general)}
+          </Balance>
+        </div>
+        <Heading6>
+          {isExternalTransfer ? t('External transfer') : t('Internal transfer')}
+        </Heading6>
+      </SummaryCard>
+
+      <FormCard title={t('Transfer details')}>
+        <Stack spacing={2.25} flex={1}>
+          <Grid>
+            <Stack spacing={0.85}>
+              <Heading6>{t('From account')}</Heading6>
               <AccountSelect
                 isFromAccount
                 onSelect={setFromAccountId}
@@ -93,8 +151,8 @@ const TransferFunds: React.FC<{ onClose?(): void }> = ({ onClose }) => {
               />
             </Stack>
 
-            <Stack flex={1} spacing={1}>
-              <Heading5>{t('To account')}</Heading5>
+            <Stack spacing={0.85}>
+              <Heading6>{t('To account')}</Heading6>
               <AccountSelect
                 onSelect={setToAccountID}
                 accounts={accounts}
@@ -102,10 +160,10 @@ const TransferFunds: React.FC<{ onClose?(): void }> = ({ onClose }) => {
                 externalAccounts={externalAccounts}
               />
             </Stack>
-          </Stack>
+          </Grid>
 
-          <Stack spacing={1}>
-            <Heading5>{t('Amount')}</Heading5>
+          <Stack spacing={0.85}>
+            <Heading6>{t('Amount')}</Heading6>
             <PriceField
               placeholder={t('Amount')}
               value={amount}
@@ -114,19 +172,18 @@ const TransferFunds: React.FC<{ onClose?(): void }> = ({ onClose }) => {
             <NewBalance amount={newBalance} isValid={isValidNewBalance} />
           </Stack>
 
-          <FormHelperText>{error}</FormHelperText>
+          <FormHelperText error={Boolean(error)}>{error}</FormHelperText>
+          {success && <Alert color="success">{success}</Alert>}
 
-          {success && <Alert color="info">{success}</Alert>}
-
-          <Stack alignSelf="flex-end" direction="row" spacing={4}>
+          <Stack mt="auto" alignItems="flex-end">
             <Button disabled={isDisabled} onClick={handleTransfer}>
               {t('Transfer funds')}
             </Button>
           </Stack>
         </Stack>
-      </Box>
-      {isTransfering && <LinearProgress />}
-    </>
+        {isTransfering && <LinearProgress color="primary" sx={{ mt: 2 }} />}
+      </FormCard>
+    </Page>
   );
 };
 

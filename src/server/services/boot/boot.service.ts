@@ -2,7 +2,12 @@ import { singleton } from 'tsyringe';
 import { sequelize } from '../../utils/pool';
 import { mainLogger } from '../../sv_logger';
 import { UserService } from '../user/user.service';
-import { getFrameworkExports, validateResourceExports } from '@server/utils/frameworkIntegration';
+import {
+  getFrameworkBridgeInfo,
+  getFrameworkExports,
+  isFrameworkIntegrationActive,
+  validateResourceExports,
+} from '@server/utils/frameworkIntegration';
 import { config } from '@server/utils/server-config';
 import { GeneralEvents } from '@server/../../typings/Events';
 import { resourceName } from '@server/utils/constants';
@@ -32,8 +37,11 @@ export class BootService {
     await sequelize.authenticate();
     logger.debug('Connected to database.');
 
-    if (config?.frameworkIntegration?.enabled) {
-      logger.info('Framework integration is enabled.');
+    if (isFrameworkIntegrationActive()) {
+      const bridge = getFrameworkBridgeInfo();
+      logger.info(
+        `Framework integration active (${bridge.kind}/${bridge.framework ?? 'custom'} → ${bridge.resource})`,
+      );
 
       try {
         logger.debug('Verifying exports ..');
@@ -64,6 +72,10 @@ export class BootService {
       }
 
       logger.info('Successfully verified exports.');
+    } else if (config?.frameworkIntegration?.enabled) {
+      logger.warn(
+        'frameworkIntegration.enabled is set but no bridge/framework was resolved; continuing in standalone mode.',
+      );
     }
 
     logger.info(`Starting ${resourceName}.`);

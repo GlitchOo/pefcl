@@ -1,5 +1,5 @@
 const esbuild = require('esbuild');
-const { esbuildDecorators } = require('@anatine/esbuild-decorators');
+const esbuildPluginTsc = require('esbuild-plugin-tsc');
 
 const args = process.argv.slice(2);
 
@@ -25,11 +25,11 @@ esbuild
     target: 'node16',
     outfile: 'dist/server.js',
     define: {
-      'process.env.NODE_ENV': `"${NODE_ENV}"`, // Mocking is value that's checked for mocking globals etc when running the server outside FiveM
+      'process.env.NODE_ENV': `"${NODE_ENV}"`,
     },
     plugins: [
-      esbuildDecorators({
-        tsconfig: 'server/tsconfig.json',
+      esbuildPluginTsc({
+        tsconfigPath: 'server/tsconfig.json',
       }),
     ],
   })

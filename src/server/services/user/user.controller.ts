@@ -4,6 +4,7 @@ import { NetPromise, PromiseEventListener } from '@decorators/NetPromise';
 import { ServerExports } from '@server/../../typings/exports/server';
 import { Export, ExportListener } from '@server/decorators/Export';
 import { config } from '@server/utils/server-config';
+import { isFrameworkIntegrationActive } from '@server/utils/frameworkIntegration';
 import { GeneralEvents, UserEvents } from '@typings/Events';
 import { Request, Response } from '@typings/http';
 import { OnlineUser } from '@typings/user';
@@ -76,7 +77,7 @@ export class UserController {
 
   @Event('playerJoining')
   playerJoining() {
-    if (config.frameworkIntegration?.enabled) return;
+    if (isFrameworkIntegrationActive()) return;
 
     const _source = global.source;
     this._userService.loadStandalonePlayer({ source: _source });
@@ -84,14 +85,14 @@ export class UserController {
 
   @Event('playerDropped')
   playerDropped() {
-    if (config.frameworkIntegration?.enabled) return;
+    if (isFrameworkIntegrationActive()) return;
     const _source = global.source;
     this._userService.deletePlayer(_source);
   }
 
   @Event(GeneralEvents.ResourceStarted)
   async onServerResourceStart() {
-    if (config.frameworkIntegration?.enabled) return;
+    if (isFrameworkIntegrationActive()) return;
 
     const players = getPlayers();
     players.forEach((player) => {

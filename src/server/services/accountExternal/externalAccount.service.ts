@@ -69,10 +69,19 @@ export class ExternalAccountService {
     return accounts.map((account) => account.toJSON());
   }
 
-  async getAccountFromExternalAccount(accountId: number, t: Transaction) {
+  async getAccountFromExternalAccount(
+    accountId: number,
+    t: Transaction,
+    ownerIdentifier: string,
+  ) {
     const externalAccount = await this._externalAccountDB.getAccountById(accountId);
+
+    if (!externalAccount || externalAccount.getDataValue('userId') !== ownerIdentifier) {
+      throw new ServerError(GenericErrors.NotFound);
+    }
+
     const account = await this._accountDB.getAccountByNumber(
-      externalAccount?.getDataValue('number') ?? '',
+      externalAccount.getDataValue('number') ?? '',
       t,
     );
     return account;

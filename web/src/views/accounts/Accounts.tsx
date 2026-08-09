@@ -1,4 +1,5 @@
 import TextField from '@components/ui/Fields/TextField';
+import BankPanel from '@components/ui/BankPanel';
 import styled from '@emotion/styled';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Stack } from '@mui/material';
 import { Box } from '@mui/system';
@@ -22,14 +23,47 @@ import theme from '../../utils/theme';
 import AccountCards from '../dashboard/components/AccountCards';
 import SharedSettings from './SharedSettings';
 
+const Page = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+`;
+
+const Hero = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--panel-radius);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(124, 181, 24, 0.2), transparent 45%),
+    var(--bg-card);
+  border: 1px solid rgba(124, 181, 24, 0.2);
+`;
+
+const Balance = styled(Heading1)`
+  font-size: 2.1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+`;
+
+const Actions = styled(BankPanel)`
+  flex: 1;
+`;
+
 const Dangerzone = styled.div`
-  border: 1px solid ${theme.palette.error.main};
-  padding: ${theme.spacing(4)};
-  border-radius: ${theme.spacing(2)};
+  border: 1px solid rgba(232, 92, 74, 0.45);
+  background: rgba(232, 92, 74, 0.08);
+  padding: ${theme.spacing(2.5)};
+  border-radius: 12px;
 `;
 
 const HelperText = styled(Heading6)`
-  font-weight: ${theme.typography.fontWeightLight};
+  font-weight: 450;
+  color: ${theme.palette.text.disabled};
 `;
 
 const Accounts = () => {
@@ -82,111 +116,106 @@ const Accounts = () => {
   const isDefaultAccountSelected = defaultAccount?.id === selectedAccountId;
 
   return (
-    <Layout>
-      <Dialog
-        fullWidth
-        maxWidth="xs"
-        open={isRenameOpen}
-        onClose={() => setIsRenameOpen(false)}
-        hideBackdrop
-      >
-        <DialogTitle>{t('Rename account')}</DialogTitle>
-        <form onSubmit={handleRename}>
-          <DialogContent>
-            <Stack spacing={2}>
-              <TextField
-                autoFocus
-                placeholder={t('New account name')}
-                value={renameInput}
-                onChange={(event) => setRenameInput(event.target.value)}
-              />
+    <Layout title={t('Accounts')} subtitle={t('Manage your Fleeca accounts and settings')}>
+      <Page>
+        <Dialog
+          fullWidth
+          maxWidth="xs"
+          open={isRenameOpen}
+          onClose={() => setIsRenameOpen(false)}
+          hideBackdrop
+        >
+          <DialogTitle>{t('Rename account')}</DialogTitle>
+          <form onSubmit={handleRename}>
+            <DialogContent>
+              <Stack spacing={2}>
+                <TextField
+                  autoFocus
+                  placeholder={t('New account name')}
+                  value={renameInput}
+                  onChange={(event) => setRenameInput(event.target.value)}
+                />
 
-              <DialogActions>
-                <Button color="error" onClick={() => setIsRenameOpen(false)}>
-                  {t('Cancel')}
-                </Button>
-                <Button type="submit">{t('Rename')}</Button>
-              </DialogActions>
-            </Stack>
-          </DialogContent>
-        </form>
-      </Dialog>
+                <DialogActions>
+                  <Button color="error" onClick={() => setIsRenameOpen(false)}>
+                    {t('Cancel')}
+                  </Button>
+                  <Button type="submit">{t('Rename')}</Button>
+                </DialogActions>
+              </Stack>
+            </DialogContent>
+          </form>
+        </Dialog>
 
-      <Stack>
-        <PreHeading>{t('Total balance')}</PreHeading>
-        <Heading1>{formatMoney(totalBalance, config.general)}</Heading1>
-      </Stack>
+        <Hero>
+          <PreHeading>{t('Total balance')}</PreHeading>
+          <Balance>{formatMoney(totalBalance, config.general)}</Balance>
+        </Hero>
 
-      <Box paddingTop={4}>
         <AccountCards
           onSelectAccount={setSelectedAccountId}
           selectedAccountId={selectedAccountId}
         />
-      </Box>
 
-      <Stack direction="row" spacing={5} marginTop={5}>
-        <Stack spacing={5}>
-          <Stack spacing={1.5} alignItems="flex-start">
-            <Heading5>{t('General')}</Heading5>
-            <Stack direction="row" spacing={4} alignItems="flex-start">
-              <Stack spacing={0.75}>
-                <Button
-                  onClick={handleSetDefault}
-                  disabled={isDefaultAccountSelected || !isAdmin || isShared}
-                >
-                  {t('Set account to default')}
-                </Button>
-                {!isAdmin && <HelperText>{t('Admin role required')}</HelperText>}
-                {isAdmin && isShared && (
-                  <HelperText>{t('Shared account cannot be default account')}</HelperText>
-                )}
-              </Stack>
+        <Actions title={t('Account settings')}>
+          <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap>
+            <Stack spacing={2.5} flex={1} minWidth="18rem">
+              <Heading5>{t('General')}</Heading5>
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                <Stack spacing={0.75}>
+                  <Button
+                    onClick={handleSetDefault}
+                    disabled={isDefaultAccountSelected || !isAdmin || isShared}
+                  >
+                    {t('Set account to default')}
+                  </Button>
+                  {!isAdmin && <HelperText>{t('Admin role required')}</HelperText>}
+                  {isAdmin && isShared && (
+                    <HelperText>{t('Shared account cannot be default account')}</HelperText>
+                  )}
+                </Stack>
 
-              <Stack spacing={0.75}>
-                <Button onClick={() => setIsRenameOpen(true)} disabled={!isAdmin}>
-                  {t('Rename account')}
-                </Button>
-                {!isAdmin && <HelperText>{t('Admin role required')}</HelperText>}
-              </Stack>
+                <Stack spacing={0.75}>
+                  <Button onClick={() => setIsRenameOpen(true)} disabled={!isAdmin}>
+                    {t('Rename account')}
+                  </Button>
+                  {!isAdmin && <HelperText>{t('Admin role required')}</HelperText>}
+                </Stack>
 
-              <Stack spacing={0.75}>
                 <Button onClick={() => copy(selectedAccount?.number ?? '')}>
                   {t('Copy account number')}
                 </Button>
               </Stack>
-            </Stack>
-          </Stack>
 
-          {isOwner && (
-            <Stack spacing={1.5} alignItems="flex-start">
-              <Heading5>{t('Danger zone')}</Heading5>
-              <Dangerzone>
-                <Stack spacing={1.5}>
-                  <span>
-                    <Button
-                      color="error"
-                      onClick={handleDeleteAccount}
-                      disabled={isDefaultAccountSelected}
-                    >
-                      {t('Delete account')}
-                    </Button>
-                  </span>
-
-                  <HelperText>
-                    {isDefaultAccountSelected
-                      ? t('You cannot delete the default account')
-                      : t('Funds will be transfered to default account.')}
-                  </HelperText>
+              {isOwner && (
+                <Stack spacing={1.25}>
+                  <Heading5>{t('Danger zone')}</Heading5>
+                  <Dangerzone>
+                    <Stack spacing={1.25}>
+                      <Button
+                        color="error"
+                        onClick={handleDeleteAccount}
+                        disabled={isDefaultAccountSelected}
+                      >
+                        {t('Delete account')}
+                      </Button>
+                      <HelperText>
+                        {isDefaultAccountSelected
+                          ? t('You cannot delete the default account')
+                          : t('Funds will be transfered to default account.')}
+                      </HelperText>
+                    </Stack>
+                  </Dangerzone>
                 </Stack>
-              </Dangerzone>
+              )}
             </Stack>
-          )}
-        </Stack>
 
-        <Stack>
-          {isShared && <SharedSettings accountId={selectedAccountId} isAdmin={isAdmin} />}
-        </Stack>
-      </Stack>
+            <Box flex={1} minWidth="16rem">
+              {isShared && <SharedSettings accountId={selectedAccountId} isAdmin={isAdmin} />}
+            </Box>
+          </Stack>
+        </Actions>
+      </Page>
     </Layout>
   );
 };
