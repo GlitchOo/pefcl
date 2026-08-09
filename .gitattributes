@@ -1,0 +1,4 @@
+# Shell scripts must use LF or CI fails with cryptic exit 1
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

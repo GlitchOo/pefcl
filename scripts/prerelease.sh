@@ -1,18 +1,22 @@
 #!/bin/sh
+set -eu
 
 PREFIX="[PEFCL]"
 RESOURCE="pefcl"
+SHA="${GITHUB_SHA_SHORT:-$(git rev-parse --short HEAD)}"
 
 echo "$PREFIX Creating pre-release"
-## Create temporary folder and move files into it. Keeping same structure according to fxmanifest.lua
-mkdir -p ./temp/$RESOURCE/src/client
-mkdir -p ./temp/$RESOURCE/web
-cp LICENSE README.md config.json import.sql fxmanifest.lua ./temp/$RESOURCE
-cp -r ./src/dist ./temp/$RESOURCE/src/dist # Copy resource files
-cp -r ./src/client/lua/ ./temp/$RESOURCE/src/client/lua # Copy Lua files
-cp -r ./web/dist ./temp/$RESOURCE/web/dist # Copy web files
-cp -r ./web/media ./temp/$RESOURCE/web/dist/media # Copy web files
+rm -rf ./temp
+mkdir -p "./temp/$RESOURCE/src/client"
+mkdir -p "./temp/$RESOURCE/src/server"
+mkdir -p "./temp/$RESOURCE/web"
 
-echo "$PREFIX Zipping it up: $RESOURCE-pre-$GITHUB_SHA_SHORT.zip"
+cp LICENSE README.md config.json import.sql fxmanifest.lua "./temp/$RESOURCE"
+cp -r ./src/dist "./temp/$RESOURCE/src/dist"
+cp -r ./src/client/lua "./temp/$RESOURCE/src/client/lua"
+cp -r ./src/server/lua "./temp/$RESOURCE/src/server/lua"
+cp -r ./web/dist "./temp/$RESOURCE/web/dist"
+cp -r ./web/media "./temp/$RESOURCE/web/dist/media"
 
-cd temp && zip -r $RESOURCE-pre-$GITHUB_SHA_SHORT.zip ./$RESOURCE
+echo "$PREFIX Zipping it up: $RESOURCE-pre-$SHA.zip"
+cd temp && zip -r "$RESOURCE-pre-$SHA.zip" "./$RESOURCE"

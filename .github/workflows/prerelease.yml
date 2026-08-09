@@ -31,9 +31,10 @@ jobs:
       - name: Get variables
         id: get_vars
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c 1-7)
+          echo "GITHUB_SHA_SHORT=$SHORT_SHA" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
 
       - name: Install main deps
         run: npm ci --ignore-scripts
@@ -59,19 +60,22 @@ jobs:
 
       - name: Install src deps
         working-directory: src
-        run: npm ci --ignore-scripts
+        run: npm ci
 
       - name: Install web deps
         working-directory: web
-        run: npm ci --ignore-scripts
+        run: npm ci
+
+      - name: Build
+        run: npm run build
 
       - name: Install zip
         run: sudo apt-get update && sudo apt-get install -y zip
 
-      - name: Create pre-release
+      - name: Package pre-release zip
         run: |
-          chmod +x "./scripts/prerelease.sh"
-          npm run pre-release
+          chmod +x ./scripts/prerelease.sh
+          ./scripts/prerelease.sh
 
       - name: Create Release & Changelog
         uses: 'marvinpinto/action-automatic-releases@v1.2.1'
