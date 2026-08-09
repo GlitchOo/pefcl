@@ -3,6 +3,10 @@ on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: write
+
 jobs:
   create-tagged-release:
     name: 'Build & Create Release'
@@ -10,16 +14,16 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.x
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: |
             package-lock.json
             src/package-lock.json
@@ -76,14 +80,11 @@ jobs:
           ./scripts/release.sh
 
       - name: Create Release & Changelog
-        uses: 'marvinpinto/action-automatic-releases@v1.2.1'
-        id: auto_release
+        uses: softprops/action-gh-release@v3
         with:
-          repo_token: '${{ secrets.GITHUB_TOKEN }}'
-          title: PEFCL Release | (${{ steps.get_vars.outputs.VERSION_TAG }})
-          prerelease: false
+          name: PEFCL Release | (${{ steps.get_vars.outputs.VERSION_TAG }})
+          generate_release_notes: true
           files: ./temp/pefcl.zip
-
+          fail_on_unmatched_files: true
         env:
-          CI: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

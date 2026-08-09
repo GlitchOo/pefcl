@@ -6,6 +6,9 @@ on:
       - main
       - develop
 
+permissions:
+  contents: write
+
 jobs:
   pre-release-build:
     name: 'Build & Create Pre-Release'
@@ -13,16 +16,16 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.x
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: |
             package-lock.json
             src/package-lock.json
@@ -78,14 +81,13 @@ jobs:
           ./scripts/prerelease.sh
 
       - name: Create Release & Changelog
-        uses: 'marvinpinto/action-automatic-releases@v1.2.1'
+        uses: softprops/action-gh-release@v3
         with:
-          repo_token: '${{ secrets.GITHUB_TOKEN }}'
-          title: Pre-Release Build (${{ steps.get_vars.outputs.SHORT_SHA }})
+          tag_name: unstable-${{ steps.get_vars.outputs.BRANCH_NAME }}
+          name: Pre-Release Build (${{ steps.get_vars.outputs.SHORT_SHA }})
           prerelease: true
-          automatic_release_tag: unstable-${{ steps.get_vars.outputs.BRANCH_NAME }}
+          generate_release_notes: true
           files: ./temp/pefcl-pre-${{ steps.get_vars.outputs.SHORT_SHA }}.zip
-
+          fail_on_unmatched_files: true
         env:
-          CI: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
